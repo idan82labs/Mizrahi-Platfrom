@@ -1,0 +1,87 @@
+# Ruff configuration for Mizrahi Compliance Platform
+# Ruff is a fast Python linter/formatter written in Rust
+# Docs: https://docs.astral.sh/ruff/
+
+# Target Python 3.11+
+target-version = "py311"
+
+# Line length (matches Prettier for consistency)
+line-length = 100
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.egg-info",
+    "dist",
+    "build",
+    "node_modules",
+    "legacy",  # Don't lint legacy reference code
+]
+
+[lint]
+# Enable these rule sets:
+# E = pycodestyle errors
+# F = pyflakes
+# I = isort (import sorting)
+# N = pep8-naming
+# W = pycodestyle warnings
+# UP = pyupgrade (Python version upgrades)
+# B = flake8-bugbear (common bugs)
+# A = flake8-builtins (builtin shadowing)
+# C4 = flake8-comprehensions
+# RUF = Ruff-specific rules
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "W",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "RUF",
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Function call in default argument (FastAPI Depends pattern)
+    "B904",   # Raise without from (sometimes intentional)
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+[lint.isort]
+# Group imports: standard library, third-party, local
+known-first-party = ["mizrahi_hooks", "mizrahi_shared", "src"]
+combine-as-imports = true
+force-single-line = false
+split-on-trailing-comma = true
+
+[lint.per-file-ignores]
+# Tests can use assert, magic values, etc.
+"**/tests/**/*.py" = ["S101", "PLR2004", "B011"]
+# __init__.py files can have unused imports (re-exports)
+"**/__init__.py" = ["F401"]
+
+[format]
+# Use double quotes (consistent with Prettier)
+quote-style = "double"
+
+# Use spaces (4 spaces, Python standard)
+indent-style = "space"
+
+# Skip magic trailing comma (let formatter decide)
+skip-magic-trailing-comma = false
+
+# Unix line endings
+line-ending = "lf"
+
+# Format docstrings
+docstring-code-format = true

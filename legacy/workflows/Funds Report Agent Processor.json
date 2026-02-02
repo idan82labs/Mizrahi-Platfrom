@@ -1,0 +1,472 @@
+{
+  "name": "Funds Report Agent Processor",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Get files from Magna and Maya\nUsing Apify Actors",
+        "height": 304,
+        "width": 1744,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        48,
+        2560
+      ],
+      "id": "ffc9a61d-06d3-40a8-95e5-be2ae2f0764d",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Proccess files and sent via email\nUsing external Python Server and a gmail address",
+        "height": 336,
+        "width": 1744,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        48,
+        2880
+      ],
+      "id": "7ea336a6-b7ac-43de-bdc0-43e7cc97941e",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "K9WppTziYC3n2vxTu",
+          "mode": "id"
+        }
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        304,
+        2672
+      ],
+      "id": "a8fea15e-7a01-46ac-b318-7b59b6c618e9",
+      "name": "Mutual Funds Main Report Downloader",
+      "alwaysOutputData": false,
+      "credentials": {
+        "apifyApi": {
+          "id": "fGe2Psh9GK96aErt",
+          "name": "Elay - Apify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get fund code from previous node\nconst fundCode = $input.first().json.fundCode;\nconst fundName = $input.first().json.fundName;\n\n// Calculate dates\nconst today = new Date();\nconst oneYearAgo = new Date();\noneYearAgo.setFullYear(today.getFullYear() - 1);\n\n// Format dates as YYYY-MM-DD\nconst formatDate = (date) => {\n  const year = date.getFullYear();\n  const month = String(date.getMonth() + 1).padStart(2, '0');\n  const day = String(date.getDate()).padStart(2, '0');\n  return `${year}-${month}-${day}`;\n};\n\nconst fromDate = formatDate(oneYearAgo);\nconst toDate = formatDate(today);\n\n// Build the URL\nconst url = `https://maya.tase.co.il/he/reports/funds?fromDate=${fromDate}&toDate=${toDate}&noMeetings=false&isSingle=false&isIntendToTaseMember=false&by=group&groupId=7&itemId=${fundCode}&eventsIds%5B%5D=5618`;\n\nreturn {\n  fundName: fundName,\n  fundCode: fundCode,\n  fromDate: fromDate,\n  toDate: toDate,\n  reportUrl: url\n};"
+      },
+      "id": "14c4e864-6872-4088-b28f-1bde8031b7fe",
+      "name": "Create Download Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b64 = $input.first().json.fileBase64;\n\nif (!b64) {\n  throw new Error('missing fileBase64 on input');\n}\n\n// לוקחים את הפריט הראשון\nconst out = $input.first();\n\n// מוסיפים לו את ה-binary\nout.binary = out.binary || {};\nout.binary.xlsx = {\n  data: Buffer.from(b64, 'base64'),\n  fileName: 'mutual-funds.xlsx',\n  mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n};\n\n// ב-Code node חייבים להחזיר מערך\nreturn [out];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        2672
+      ],
+      "id": "ff661755-9adf-4816-9184-9a8a8c36aec0",
+      "name": "Code to XLSX File",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "actorSource": "store",
+        "actorId": {
+          "__rl": true,
+          "value": "5lhI6O39Qbgv9O0gs",
+          "mode": "id"
+        },
+        "customBody": "={\n  \"url\": \"{{ $('Create Download Link').item.json.reportUrl }}\"\n} "
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        880,
+        2672
+      ],
+      "id": "a7de7d05-8705-47fa-9f34-3a3382801e60",
+      "name": "Funds Manager Actor",
+      "alwaysOutputData": false,
+      "credentials": {
+        "apifyApi": {
+          "id": "fGe2Psh9GK96aErt",
+          "name": "Elay - Apify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}",
+        "limit": null
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        2672
+      ],
+      "id": "965aa1c8-e006-4623-968a-3a0fcfbdd08c",
+      "name": "Funds Manager Actor - Get DB",
+      "alwaysOutputData": false,
+      "credentials": {
+        "apifyApi": {
+          "id": "fGe2Psh9GK96aErt",
+          "name": "Elay - Apify"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "Key-Value Stores",
+        "storeId": {
+          "__rl": true,
+          "value": "={{ $('Funds Manager Actor').item.json.defaultKeyValueStoreId }}",
+          "mode": "id"
+        },
+        "recordKey": {
+          "__rl": true,
+          "value": "report_latest_month.csv",
+          "mode": "list",
+          "cachedResultName": "report_latest_month.csv",
+          "cachedResultUrl": "https://api.apify.com/v2/key-value-stores/QMBbobmJhtENeswSm/records/report_latest_month.csv"
+        }
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        2672
+      ],
+      "id": "b72935a8-bd14-438e-b5ee-ca9ba51f9913",
+      "name": "Latest Month Downloader",
+      "alwaysOutputData": false,
+      "credentials": {
+        "apifyApi": {
+          "id": "fGe2Psh9GK96aErt",
+          "name": "Elay - Apify"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "Key-Value Stores",
+        "storeId": {
+          "__rl": true,
+          "value": "={{ $('Funds Manager Actor').item.json.defaultKeyValueStoreId }}",
+          "mode": "id"
+        },
+        "recordKey": {
+          "__rl": true,
+          "value": "report_previous_month.csv",
+          "mode": "list",
+          "cachedResultName": "report_previous_month.csv",
+          "cachedResultUrl": "https://api.apify.com/v2/key-value-stores/V9ddZE8lAAUDghqt0/records/report_previous_month.csv"
+        }
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        2672
+      ],
+      "id": "a9fea03f-72c2-4558-81cd-a91100287f9d",
+      "name": "Previous Month Downloader",
+      "alwaysOutputData": false,
+      "credentials": {
+        "apifyApi": {
+          "id": "fGe2Psh9GK96aErt",
+          "name": "Elay - Apify"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Start').item.json.emails }}",
+        "subject": "=בקרה על {{ $('Funds Manager Actor - Get DB').item.json.downloadedFiles[0].reportName }} למנהל קרן {{ $('Start').item.json.name }}",
+        "message": "={{ $('HTML Parser').item.json.html }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        640,
+        3024
+      ],
+      "id": "5984351a-3f14-4651-ae20-8d7d1dc878cd",
+      "name": "Send a message",
+      "webhookId": "934d81eb-cf20-4276-b2b5-2a31ace44790",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DGg7VXtEGqomgL1k",
+          "name": "Elay.g - Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html dir=\"rtl\" lang=\"he\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>דוח בקרת איכות נתונים</title>\n</head>\n<body style=\"margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; direction: rtl; line-height: 1.7;\">\n    \n    <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"background-color: #f4f6f8; padding: 40px 20px;\">\n        <tr>\n            <td align=\"center\">\n                \n                <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"600\" style=\"max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06); overflow: hidden;\">\n                    \n                    <!-- Header -->\n                    <tr>\n                        <td style=\"background-color: #ffffff; padding: 30px 40px; border-bottom: 1px solid #eef1f4; text-align: center;\">\n                            <img src=\"https://storage.bhol.co.il/articles/35167_tumb_700X500.png\" alt=\"מזרחי טפחות\" style=\"max-height: 100px; max-width: 420px;\">\n                        </td>\n                    </tr>\n                    \n                    <!-- Status Banner -->\n                    <tr>\n                        <td style=\"background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 45px 40px; text-align: center;\">\n                            <div style=\"width: 70px; height: 70px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 20px; line-height: 70px;\">\n                                <span style=\"font-size: 32px; color: white;\">✓</span>\n                            </div>\n                            <h1 style=\"color: #ffffff; margin: 0 0 8px 0; font-size: 24px; font-weight: 600;\">דוח בקרת איכות נתונים</h1>\n                            <p style=\"color: rgba(255,255,255,0.9); margin: 0; font-size: 15px; font-weight: 400;\">הדוח נוצר בהצלחה</p>\n                        </td>\n                    </tr>\n                    \n                    <!-- Main Content -->\n                    <tr>\n                        <td style=\"padding: 40px;\">\n                            \n                            <!-- Info Card -->\n                            <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"background-color: #f8fafc; border-radius: 8px; border-right: 4px solid #10B981;\">\n                                <tr>\n                                    <td style=\"padding: 25px;\">\n                                        <h2 style=\"color: #1e293b; margin: 0 0 15px 0; font-size: 17px; font-weight: 600;\">פרטי הדוח</h2>\n                                        \n                                        <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">\n                                            <tr>\n                                                <td style=\"padding: 8px 0; color: #64748b; font-size: 14px; width: 120px;\">מנהל קרן:</td>\n                                                <td style=\"padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 500;\">{{ $('Start').item.json.fundName }}</td>\n                                            </tr>\n                                            <tr>\n                                                <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">שם הדוח:</td>\n                                                <td style=\"padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 500;\">{{ $('Funds Manager Actor - Get DB').item.json.downloadedFiles[0].reportName }}</td>\n                                            </tr>\n                                            <tr>\n                                                <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">תאריך יצירה:</td>\n                                                <td style=\"padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 500;\">{{ $now.setZone('Asia/Jerusalem').toFormat('dd/MM/yyyy') }}</td>\n                                            </tr>\n                                            <tr>\n                                                <td style=\"padding: 8px 0; color: #64748b; font-size: 14px;\">שעת יצירה:</td>\n                                                <td style=\"padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 500;\">{{ $now.setZone('Asia/Jerusalem').toFormat('HH:mm') }}</td>\n                                            </tr>\n                                        </table>\n                                    </td>\n                                </tr>\n                            </table>\n                            \n                            <!-- Attachment Notice -->\n                            <table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\" style=\"margin-top: 25px;\">\n                                <tr>\n                                    <td style=\"background-color: #eff6ff; border-radius: 8px; padding: 18px 20px; text-align: center;\">\n                                        <span style=\"color: #3b82f6; font-size: 18px; margin-left: 8px;\">📎</span>\n                                        <span style=\"color: #1e40af; font-size: 14px;\">הדוח מצורף למייל זה כקובץ Excel</span>\n                                    </td>\n                                </tr>\n                            </table>\n                            \n                        </td>\n                    </tr>\n                    \n                    <!-- Footer -->\n                    <tr>\n                        <td style=\"background-color: #f8fafc; padding: 20px 40px; text-align: center; border-top: 1px solid #e2e8f0;\">\n                            <p style=\"margin: 0; color: #94a3b8; font-size: 12px;\">\n                                פותח על ידי <a href=\"https://82labs.com\" target=\"_blank\" style=\"color: #64748b; text-decoration: none; font-weight: 600;\">82Labs</a>\n                            </p>\n                        </td>\n                    </tr>\n                    \n                </table>\n                \n            </td>\n        </tr>\n    </table>\n    \n</body>\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        3024
+      ],
+      "id": "bcd5e4d8-3546-4802-9541-21e0fe2d252b",
+      "name": "HTML Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the XLSX binary data\nconst fundsListBinary = $('Code to XLSX File').first().binary.xlsx;\n\n// Get CSV data as text strings from json.data\nconst currentReportText = $('Latest Month Downloader').first().json.data;\nconst previousReportText = $('Previous Month Downloader').first().json.data;\n\n// Get form field values\nconst formFields = $('Start').first().json._firstItem;\nconst managerName = $('Start').first().json.fundName;\nconst trusteeName = '';\nconst reportMonth = $('Funds Manager Actor - Get DB').first().json.downloadedFiles?.[0]?.reportName || '';\n\n// Build multipart form data manually\nconst boundary = '----FormBoundary' + Date.now();\n\nfunction buildFilePart(fieldName, fileName, mimeType) {\n  return `--${boundary}\\r\\nContent-Disposition: form-data; name=\"${fieldName}\"; filename=\"${fileName}\"\\r\\nContent-Type: ${mimeType}\\r\\n\\r\\n`;\n}\n\nfunction buildTextPart(fieldName, value) {\n  return `--${boundary}\\r\\nContent-Disposition: form-data; name=\"${fieldName}\"\\r\\n\\r\\n${value}\\r\\n`;\n}\n\n// Convert XLSX from base64 to buffer\nconst fundsListData = Buffer.from(fundsListBinary.data, 'base64');\n\n// Convert CSV text to buffers\nconst currentReportData = Buffer.from(currentReportText, 'utf-8');\nconst previousReportData = Buffer.from(previousReportText, 'utf-8');\n\n// Build the multipart body\nconst parts = [];\n\n// XLSX file part\nparts.push(Buffer.from(buildFilePart('funds_list', 'funds_list.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')));\nparts.push(fundsListData);\nparts.push(Buffer.from('\\r\\n'));\n\n// CSV file parts (from text)\nparts.push(Buffer.from(buildFilePart('current_report', 'current_report.csv', 'text/csv')));\nparts.push(currentReportData);\nparts.push(Buffer.from('\\r\\n'));\n\nparts.push(Buffer.from(buildFilePart('previous_report', 'previous_report.csv', 'text/csv')));\nparts.push(previousReportData);\nparts.push(Buffer.from('\\r\\n'));\n\n// Text parts\nparts.push(Buffer.from(buildTextPart('manager_name', managerName)));\nparts.push(Buffer.from(buildTextPart('trustee_name', trusteeName)));\nparts.push(Buffer.from(buildTextPart('report_month', reportMonth)));\n\n// Closing boundary\nparts.push(Buffer.from(`--${boundary}--\\r\\n`));\n\n// Combine all parts\nconst body = Buffer.concat(parts);\n\n// Send request\nconst response = await this.helpers.httpRequest({\n  method: 'POST',\n  url: 'http://209.38.226.220/process',\n  headers: {\n    'Content-Type': `multipart/form-data; boundary=${boundary}`\n  },\n  body: body,\n  returnFullResponse: false,\n  json: true\n});\n\n// Return with binary for email\nreturn [{\n  json: {\n    status: response.status,\n    job_id: response.job_id,\n    fileName: response.fileName || 'fund_report.xlsx',\n    managerName: managerName,\n    reportMonth: reportMonth\n  },\n  binary: {\n    data: {\n      data: response.fileBase64,\n      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n      fileName: response.fileName || 'fund_report.xlsx'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        3024
+      ],
+      "id": "c13ec588-3587-4713-b18c-5ee6a1223b40",
+      "name": "Fetch From Server - JS"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "emails",
+              "type": "any"
+            },
+            {
+              "name": "fundCode",
+              "type": "any"
+            },
+            {
+              "name": "fundName",
+              "type": "any"
+            }
+          ]
+        }
+      },
+      "id": "e2fc84b3-e1ba-45da-be2b-d67e2aab9ed4",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        -128,
+        2672
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "datasetId": "={{ $json.defaultDatasetId }}",
+        "limit": null
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        512,
+        2672
+      ],
+      "id": "ba023bfa-3160-4776-948d-d1d904dca9d1",
+      "name": "Funds Manager Actor - Get DB1",
+      "alwaysOutputData": false,
+      "credentials": {
+        "apifyApi": {
+          "id": "fGe2Psh9GK96aErt",
+          "name": "Elay - Apify"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## Main Report\n### * Database ID: {{ $json.defaultDatasetId }}\n\n## Fundes Manager Reports\n### * Key-Value Store ID: {{ $('Funds Manager Actor').item.json.defaultKeyValueStoreId }}\n### * Key-Value Store Record Key: report_latest_month.csv\n### * Key-Value Store Record Key: report_previous_month.csv\n\n## APIFY API Key\n### * <APIFY_API_TOKEN>",
+        "height": 368,
+        "width": 720
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        48,
+        3232
+      ],
+      "typeVersion": 1,
+      "id": "2618f787-a8ad-497f-b4d2-2a1edee84102",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {
+    "Start": [
+      {
+        "json": {
+          "emails": "elay.g@82labs.io",
+          "fundCode": "10048",
+          "fundName": "סיגמא"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Mutual Funds Main Report Downloader": {
+      "main": [
+        [
+          {
+            "node": "Funds Manager Actor - Get DB1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Download Link": {
+      "main": [
+        [
+          {
+            "node": "Mutual Funds Main Report Downloader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code to XLSX File": {
+      "main": [
+        [
+          {
+            "node": "Funds Manager Actor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Funds Manager Actor": {
+      "main": [
+        [
+          {
+            "node": "Funds Manager Actor - Get DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Funds Manager Actor - Get DB": {
+      "main": [
+        [
+          {
+            "node": "Latest Month Downloader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Latest Month Downloader": {
+      "main": [
+        [
+          {
+            "node": "Previous Month Downloader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Previous Month Downloader": {
+      "main": [
+        [
+          {
+            "node": "HTML Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Parser": {
+      "main": [
+        [
+          {
+            "node": "Fetch From Server - JS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch From Server - JS": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Create Download Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Funds Manager Actor - Get DB1": {
+      "main": [
+        [
+          {
+            "node": "Code to XLSX File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "160e9803-c2a6-4c46-b2a7-2e140a8569f3",
+  "meta": {
+    "instanceId": "c880adfc8ab05950d92e126ee3993c4a816dbb96fe9687814d0ff32aa19bc6ed"
+  },
+  "id": "y06oR8jGKE6VBrBs",
+  "tags": []
+}

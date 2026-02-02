@@ -85,3 +85,14 @@ uploads/
 # Misc
 *.bak
 *.tmp
+
+# Claude Code
+# Local overrides (developer-specific, not committed)
+CLAUDE.local.md
+**/CLAUDE.local.md
+.claude/settings.local.json
+
+# Claude session data (auto-generated)
+.claude/todos/
+.claude/scratchpad/
+.claude/*.jsonl

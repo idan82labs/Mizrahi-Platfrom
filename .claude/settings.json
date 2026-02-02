@@ -1,0 +1,128 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read fp; [ -z \"$fp\" ] && exit 0; for pattern in .env .env.local production.yaml package-lock.json pnpm-lock.yaml yarn.lock .git/ node_modules/ dist/ build/ __pycache__/; do case \"$fp\" in *\"$pattern\"*) echo \"BLOCKED: Writing to $fp is not allowed.\" >&2; exit 2;; esac; done; } || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // empty' | { read cmd; [ -z \"$cmd\" ] && exit 0; branch=$(cd \"$CLAUDE_PROJECT_DIR\" && git rev-parse --abbrev-ref HEAD 2>/dev/null); if echo \"$cmd\" | grep -qE '^git commit' && echo \"$branch\" | grep -qE '^(main|master|dev)$'; then echo \"BLOCKED: Cannot commit directly on $branch. Create a feature branch first.\" >&2; exit 2; fi; } || true"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // empty' | { read cmd; [ -z \"$cmd\" ] && exit 0; if echo \"$cmd\" | grep -qE 'git push.*(origin\\s+)?(main|master|dev)(\\s|$)'; then echo \"BLOCKED: Cannot push directly to protected branch. Use PR workflow.\" >&2; exit 2; fi; } || true"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // empty' | { read cmd; [ -z \"$cmd\" ] && exit 0; if echo \"$cmd\" | grep -qE 'git push.*--force'; then echo \"BLOCKED: Force push is not allowed.\" >&2; exit 2; fi; } || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read fp; [ -z \"$fp\" ] && exit 0; if echo \"$fp\" | grep -qE '\\.py$'; then cd \"$CLAUDE_PROJECT_DIR\" && command -v uv >/dev/null 2>&1 && uv run ruff format \"$fp\" 2>/dev/null; elif echo \"$fp\" | grep -qE '\\.(ts|tsx|js|jsx|mjs|css|json|md)$'; then cd \"$CLAUDE_PROJECT_DIR\" && command -v npx >/dev/null 2>&1 && npx prettier --write \"$fp\" 2>/dev/null; fi; } || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && git diff --name-only 2>/dev/null | head -20 | xargs -I {} grep -l 'console\\.log\\|console\\.debug\\|print(' {} 2>/dev/null | head -5 | { files=$(cat); if [ -n \"$files\" ]; then echo \"WARNING: Debug statements found in modified files:\" >&2; echo \"$files\" | while read f; do echo \"  - $f\" >&2; done; fi; } || true"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'Awaiting your input' 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pnpm *)",
+      "Bash(npm run *)",
+      "Bash(npm test*)",
+      "Bash(npm install*)",
+      "Bash(npx prettier *)",
+      "Bash(npx eslint *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vitest *)",
+      "Bash(uv run *)",
+      "Bash(uv sync*)",
+      "Bash(uv add *)",
+      "Bash(pytest *)",
+      "Bash(python -c *)",
+      "Bash(python -m *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch*)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git fetch*)",
+      "Bash(git pull*)",
+      "Bash(git stash*)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git cherry-pick *)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~/*)",
+      "Bash(chmod 777*)",
+      "Bash(sudo *)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(*.pem)",
+      "Read(*secret*)",
+      "Read(*credential*)",
+      "Read(*password*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Edit(config/environments/production.yaml)",
+      "Write(.env)",
+      "Write(.env.*)"
+    ]
+  }
+}

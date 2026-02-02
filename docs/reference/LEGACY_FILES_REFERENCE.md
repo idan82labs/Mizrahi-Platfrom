@@ -1,9 +1,12 @@
 # Legacy Files Reference
 
-This document provides references to the original working files in the backup directory.
+This document provides references to the original working files preserved in the repository.
 Use these files for debugging individual hook workflows and understanding the original implementation.
 
-**Backup Location**: `/home/alexandr/remote_backup/`
+**Legacy Location**: `./legacy/` (in repository root)
+
+> **Note**: Legacy files were moved from external backup to the repository for portability.
+> All developers now have access to the same reference files.
 
 ---
 
@@ -11,8 +14,8 @@ Use these files for debugging individual hook workflows and understanding the or
 
 | New Location | Legacy File | Purpose |
 |--------------|-------------|---------|
-| `packages/hooks/src/mizrahi_hooks/monthly_report/` | `fund_automation_complete.py` | Hook #1 original implementation |
-| `packages/hooks/src/mizrahi_hooks/special_transactions/` | `mizrahi_special_transactions.py` | Hook #2 original implementation |
+| `packages/hooks/src/mizrahi_hooks/monthly_report/` | `legacy/scripts/fund_automation_complete.py` | Hook #1 original implementation |
+| `packages/hooks/src/mizrahi_hooks/special_transactions/` | `legacy/scripts/mizrahi_special_transactions.py` | Hook #2 original implementation |
 | `config/hooks.yaml` | Various hardcoded configs | Hook configuration |
 | `config/managers.yaml` | `FUND_MANAGERS` dict | Fund manager mapping |
 
@@ -23,8 +26,8 @@ Use these files for debugging individual hook workflows and understanding the or
 ### Hook #1: Monthly Report Validation
 
 ```
-File: /home/alexandr/remote_backup/fund_automation_complete.py
-Lines: 984
+File: legacy/scripts/fund_automation_complete.py
+Lines: ~984
 Status: Production (Active)
 ```
 
@@ -36,8 +39,7 @@ Status: Production (Active)
 
 **Run Standalone:**
 ```bash
-cd /home/alexandr/remote_backup
-source /home/alexandr/remote_backup/mizrahi-venv/bin/activate
+cd legacy/scripts
 python fund_automation_complete.py --help
 ```
 
@@ -46,8 +48,8 @@ python fund_automation_complete.py --help
 ### Hook #2: Special Transactions Validation
 
 ```
-File: /home/alexandr/remote_backup/mizrahi_special_transactions.py
-Lines: 2,469
+File: legacy/scripts/mizrahi_special_transactions.py
+Lines: ~2,469
 Status: Development
 ```
 
@@ -61,8 +63,7 @@ Status: Development
 
 **Run Standalone:**
 ```bash
-cd /home/alexandr/remote_backup
-source /home/alexandr/remote_backup/mizrahi-venv/bin/activate
+cd legacy/scripts
 
 # Single manager test
 python mizrahi_special_transactions.py \
@@ -78,14 +79,14 @@ python mizrahi_special_transactions.py \
 ### Batch Processing
 
 ```
-File: /home/alexandr/remote_backup/batch_special_transactions.py
-Lines: 493
+File: legacy/scripts/batch_special_transactions.py
+Lines: ~493
 Status: Production
 ```
 
 **Run Batch for All Managers:**
 ```bash
-cd /home/alexandr/remote_backup
+cd legacy/scripts
 ./run_batch_all.sh YOUR_APIFY_TOKEN [GMAIL_USER] [GMAIL_PASSWORD]
 ```
 
@@ -101,7 +102,7 @@ cd /home/alexandr/remote_backup
 ### Hook #1 Workflow
 
 ```
-File: /home/alexandr/remote_backup/Funds Report Agent Processor.json
+File: legacy/workflows/Funds Report Agent Processor.json
 n8n URL: https://n8n.82labs.io
 Form: /form/fund-form
 ```
@@ -116,7 +117,7 @@ Form: /form/fund-form
 **Import to n8n:**
 ```bash
 # Copy workflow JSON to n8n import
-cat /home/alexandr/remote_backup/Funds\ Report\ Agent\ Processor.json | pbcopy
+cat "legacy/workflows/Funds Report Agent Processor.json" | pbcopy
 # Then paste in n8n UI → Workflows → Import from JSON
 ```
 
@@ -125,7 +126,7 @@ cat /home/alexandr/remote_backup/Funds\ Report\ Agent\ Processor.json | pbcopy
 ### Hook #2 Workflow
 
 ```
-File: /home/alexandr/remote_backup/mizrahi_special_transactions_workflow.json
+File: legacy/workflows/mizrahi_special_transactions_workflow.json
 n8n URL: https://n8n.82labs.io
 Form: /form/mizrahi-special-transactions
 ```
@@ -141,48 +142,17 @@ Form: /form/mizrahi-special-transactions
 
 ---
 
-## Test Data & Output Examples
-
-### Test Environment
-
-```
-Directory: /home/alexandr/remote_backup/mizrahi-test-env/
-Contents:
-- Sample input files
-- Expected output formats
-- Test fixtures
-```
-
-### Batch Output Examples
-
-```
-Directory: /home/alexandr/remote_backup/batch_output/
-Structure:
-└── 20260117_184128/           # Timestamp folder
-    ├── Mutual_Funds_List.xlsx
-    ├── batch_summary.txt
-    ├── batch_summary.json
-    ├── מגדל/
-    │   ├── מגדל_special_transactions.csv
-    │   ├── מגדל_special_transactions_report.xlsx
-    │   ├── מגדל_email.json
-    │   └── log/
-    └── ... (other managers)
-```
-
----
-
 ## Email Scripts
 
 ### Batch Email Sender
 
 ```
-File: /home/alexandr/remote_backup/send_batch_email.py
+File: legacy/scripts/send_batch_email.py
 ```
 
 **Usage:**
 ```bash
-python send_batch_email.py \
+python legacy/scripts/send_batch_email.py \
     --batch-dir "./batch_output/20260117_184128" \
     --gmail-user "your@gmail.com" \
     --gmail-password "app-password" \
@@ -192,7 +162,7 @@ python send_batch_email.py \
 ### Test Results Email
 
 ```
-File: /home/alexandr/remote_backup/send_test_results.py
+File: legacy/scripts/send_test_results.py
 ```
 
 ---
@@ -262,14 +232,13 @@ TYPE_REQUIRES_DECISION_1_OR_2 = {31, 32, 33, 34, 35, 36}
 ### Step 1: Test Original Script
 
 ```bash
-cd /home/alexandr/remote_backup
-source mizrahi-venv/bin/activate
+cd legacy/scripts
 
 # For Hook #2 with test data
 python mizrahi_special_transactions.py \
     --manager-name "סיגמא" \
-    --mutual-funds-list "mizrahi-test-env/Mutual_Funds_List.xlsx" \
-    --manager-report "mizrahi-test-env/sigma_report.csv" \
+    --mutual-funds-list "path/to/Mutual_Funds_List.xlsx" \
+    --manager-report "path/to/report.csv" \
     --output-dir "./debug_output" \
     --emails "test@test.com" \
     --skip-tase-prices
@@ -279,30 +248,18 @@ python mizrahi_special_transactions.py \
 
 ```bash
 # Compare original output with new implementation
-diff -r /home/alexandr/remote_backup/debug_output ./output
-```
-
-### Step 3: Check Logs
-
-```bash
-# Original logs
-ls -la /home/alexandr/remote_backup/log/
-
-# View specific check log
-cat /home/alexandr/remote_backup/log/*/chk4_decision.log
+diff -r ./debug_output ../output/
 ```
 
 ---
 
 ## Version Comparison
 
-| File | Root (Latest) | Mizrahi-Automations | Notes |
-|------|---------------|---------------------|-------|
-| `mizrahi_special_transactions.py` | 2,469 lines | 2,239 lines | ROOT has דחצ voting checks |
-| `batch_special_transactions.py` | Event ID 5618 | Event ID 5615 | ROOT is correct |
-| `fund_automation_complete.py` | Only copy | - | No duplicates |
-
-**Always use ROOT versions for reference.**
+| File | Lines | Notes |
+|------|-------|-------|
+| `mizrahi_special_transactions.py` | 2,469 | Has דחצ voting checks |
+| `batch_special_transactions.py` | 493 | Event ID 5618 (correct) |
+| `fund_automation_complete.py` | 984 | Complete implementation |
 
 ---
 
@@ -344,8 +301,9 @@ sudo journalctl -u mizrahi-api -f
 
 ## Related Documentation
 
+- [Legacy README](../../legacy/README.md) - Overview of legacy files
 - [System Documentation](../SYSTEM_DOCUMENTATION.md) - Complete system overview
-- [Architecture Plan](./ARCHITECTURE.md) - Monorepo architecture
+- [Architecture Plan](../ARCHITECTURE.md) - Monorepo architecture
 - [System Guide](../guides/SYSTEM_GUIDE.md) - Original system guide
 - [Batch Processing](../guides/BATCH_PROCESSING.md) - Batch processing guide
 - [Cheatsheet](../CHEATSHEET.md) - Quick commands reference
