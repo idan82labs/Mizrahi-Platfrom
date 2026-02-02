@@ -1,0 +1,72 @@
+# Fund Manager Configuration
+# This is the single source of truth for fund manager definitions
+
+version: "1.0"
+
+managers:
+  migdal:
+    id: "10040"
+    name_he: "מגדל"
+    name_en: "Migdal"
+    enabled: true
+
+  ayalon:
+    id: "10054"
+    name_he: "איילון"
+    name_en: "Ayalon"
+    enabled: true
+
+  kesem:
+    id: "10047"
+    name_he: "קסם"
+    name_en: "Kesem"
+    enabled: true
+
+  sigma:
+    id: "10048"
+    name_he: "סיגמא"
+    name_en: "Sigma"
+    enabled: true
+
+  forest:
+    id: "10082"
+    name_he: "פורסט"
+    name_en: "Forest"
+    enabled: true
+
+  harel:
+    id: "10031"
+    name_he: "הראל"
+    name_en: "Harel"
+    enabled: true
+
+  analyst:
+    id: "10019"
+    name_he: "אנליסט"
+    name_en: "Analyst"
+    enabled: true
+
+  meitav:
+    id: "10083"
+    name_he: "מיטב"
+    name_en: "Meitav"
+    enabled: true
+
+  ibi:
+    id: "10068"
+    name_he: "איביאי"
+    name_en: "IBI"
+    enabled: true
+
+  altshuler:
+    id: "10017"
+    name_he: "אלטשולר-שחם"
+    name_en: "Altshuler Shaham"
+    enabled: true
+
+# Apify configuration for data fetching
+apify:
+  funds_list_actor: "K9WppTziYC3n2vxTu"
+  reports_actor: "5lhI6O39Qbgv9O0gs"
+  timeout_seconds: 300
+  max_retries: 3

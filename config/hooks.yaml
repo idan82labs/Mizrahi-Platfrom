@@ -1,0 +1,220 @@
+# Hook Definitions and Schedules
+# This file defines all validation hooks, their parameters, and schedules
+
+version: "1.0"
+
+defaults:
+  timezone: "Asia/Jerusalem"
+  email:
+    from: "notifications@82labs.io"
+    provider: "resend"
+
+hooks:
+  # ============================================
+  # Hook #1: Monthly Report Validation
+  # ============================================
+  monthly_report:
+    id: "monthly_report"
+    name: "Monthly Report Validation"
+    name_he: "בקרה אוטומטית על דוח חודשי"
+    description: "Validates monthly fund holdings reports against Magna list"
+    status: "active"
+
+    schedule:
+      enabled: true
+      cron: "0 9 5 * *"  # 5th of every month at 09:00
+      timezone: "Asia/Jerusalem"
+
+    parameters:
+      # Price check threshold (percentage)
+      price_variance_threshold: 7.5
+
+      # Asset types flagged as unusual
+      unusual_asset_types:
+        - 16
+        - 21
+        - 22
+        - 23
+        - 24
+        - 52
+        - 53
+        - 57
+        - 58
+        - 99
+        - 101
+        - 112
+        - 201
+        - 207
+        - 209
+
+      # Required asset type combinations (Clause 214)
+      required_combinations:
+        111: [38, 42, 45, 47, 49, 56]
+        212: [326, 327]
+        213: [319]
+        208: [307]
+        210: [310]
+
+      # Minimum value to trigger combination check
+      combination_threshold_ils: 100000
+
+    checks:
+      - id: "completeness"
+        name_he: "בדיקת שלמות"
+        description: "Cross-reference Magna vs Manager reports"
+        enabled: true
+
+      - id: "unusual_assets"
+        name_he: "סוגי נכסים חריגים"
+        description: "Flag unusual asset types with value > 0"
+        enabled: true
+
+      - id: "new_assets"
+        name_he: "נכסים חדשים"
+        description: "New assets added since previous month"
+        enabled: true
+
+      - id: "quantity_changes"
+        name_he: "שינויים בכמות"
+        description: "Unusual quantity changes month-over-month"
+        enabled: true
+
+      - id: "clause_328"
+        name_he: "סעיף 328"
+        description: "Borrowed quantity consistency check"
+        enabled: true
+
+      - id: "required_combinations"
+        name_he: "שילובים נדרשים"
+        description: "Required asset type combinations (Clause 214)"
+        enabled: true
+
+      - id: "price_reasonableness"
+        name_he: "סבירות מחירים"
+        description: "Price ratio validation"
+        enabled: true
+
+    email:
+      enabled: true
+      template: "monthly_report"
+      recipients_from_input: true
+      cc:
+        - "elay.g@82labs.io"
+
+    output:
+      format: "xlsx"
+      include_review_columns: true
+
+  # ============================================
+  # Hook #2: Special Transactions Validation
+  # ============================================
+  special_transactions:
+    id: "special_transactions"
+    name: "Special Transactions Validation"
+    name_he: "בקרה אוטומטית על דוח עסקאות מתואמות ועסקאות מחוץ לבורסה"
+    description: "Validates coordinated/off-exchange trades"
+    status: "development"
+
+    schedule:
+      enabled: false  # Manual trigger only
+      cron: "0 10 5 * *"  # Planned: 5th at 10:00
+      timezone: "Asia/Jerusalem"
+
+    parameters:
+      # Price variance threshold (percentage)
+      price_variance_threshold: 5.0
+
+      # Number of random samples for manual verification
+      sample_size: 5
+
+      # Skip TASE price scraping (slow, requires Selenium)
+      skip_tase_prices: true
+
+      # Transaction types requiring decision method 1
+      decision_types_requiring_1:
+        - 12
+        - 22
+
+      # Transaction types requiring decision method 1 or 2
+      decision_types_requiring_1_or_2:
+        - 31
+        - 32
+        - 33
+        - 34
+        - 35
+        - 36
+
+      # Event ID for special transactions report
+      event_id: 5618
+
+    checks:
+      - id: "chk1_duplicates"
+        name_he: "עסקאות כפולות"
+        description: "Inter-fund transactions (buy/sell pairs)"
+        enabled: true
+
+      - id: "chk3_dates"
+        name_he: "חריגות תאריך"
+        description: "Transaction dates within report month"
+        enabled: true
+
+      - id: "chk4_decision"
+        name_he: "שיטת ההחלטה"
+        description: "Decision method and דחצ voting rules"
+        enabled: true
+
+      - id: "chk5_sampling"
+        name_he: "דגימות"
+        description: "Random samples for manual verification"
+        enabled: true
+
+      - id: "chk6_prices"
+        name_he: "בדיקות מחיר"
+        description: "Cross-check with TASE market data"
+        enabled: true
+
+      - id: "chk7_problematic"
+        name_he: "ניירות בעייתיים"
+        description: "Securities on warning/halt/restricted lists"
+        enabled: true
+
+    email:
+      enabled: true
+      template: "special_transactions"
+      recipients_from_input: true
+      include_samples: true
+      cc:
+        - "elay.g@82labs.io"
+
+    output:
+      format: "xlsx"
+      sheets:
+        - "סיכום"
+        - "סטטוס בדיקות"
+        - "עסקאות כפולות"
+        - "חריגות תאריך"
+        - "חריגות החלטה"
+        - "דגימות"
+        - "בדיקות מחיר"
+        - "ניירות בעייתיים"
+        - "מחוץ לטווח"
+
+  # ============================================
+  # Hook #3: Financial Report Validation (Future)
+  # ============================================
+  financial_report:
+    id: "financial_report"
+    name: "Financial Report Validation"
+    name_he: "בדיקת דוח כספי אוטומטית"
+    description: "Automated financial report validation"
+    status: "specification"
+    planned_release: "Q1 2026"
+
+    schedule:
+      enabled: false
+
+    parameters: {}
+    checks: []
+
+    email:
+      enabled: false
