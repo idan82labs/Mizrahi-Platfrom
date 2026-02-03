@@ -1,0 +1,20 @@
+[
+  {
+    "manager_name": "פורסט",
+    "report_month": "דצמבר 2025",
+    "decision_1_transactions": null,
+    "decision_2_transactions": [
+      {
+        "fund_number": 5125265,
+        "fund_name": "10/90 FOREST",
+        "security_name": "27 הכשרת הישוב אגח",
+        "security_number": "1232941",
+        "quantity": 3577000.0,
+        "price": 99.3998,
+        "date": "04-12-2025",
+        "type": 31,
+        "decision_method": 2
+      }
+    ]
+  }
+]

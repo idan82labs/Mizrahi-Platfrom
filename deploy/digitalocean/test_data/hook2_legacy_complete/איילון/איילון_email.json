@@ -1,0 +1,20 @@
+[
+  {
+    "manager_name": "איילון",
+    "report_month": "דצמבר 2025",
+    "decision_1_transactions": null,
+    "decision_2_transactions": [
+      {
+        "fund_number": 5136098,
+        "fund_name": "ישראל MIDCAP פסטרנק שהם מ",
+        "security_name": "ג'נריישן קפיטל",
+        "security_number": "1156926",
+        "quantity": -9000.0,
+        "price": 139.2,
+        "date": "29-12-2025",
+        "type": 11,
+        "decision_method": 2
+      }
+    ]
+  }
+]

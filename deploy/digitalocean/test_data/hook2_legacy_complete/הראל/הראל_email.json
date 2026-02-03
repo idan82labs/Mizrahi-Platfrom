@@ -1,0 +1,32 @@
+[
+  {
+    "manager_name": "הראל",
+    "report_month": "דצמבר 2025",
+    "decision_1_transactions": [
+      {
+        "fund_number": 5127790,
+        "fund_name": "הראל כספית מגמת ריבית",
+        "security_name": "הלל פקדונות נעמ1ל",
+        "security_number": "1222520",
+        "quantity": 6000000.0,
+        "price": 102.3353,
+        "date": "09-12-2025",
+        "type": 22,
+        "decision_method": 1
+      }
+    ],
+    "decision_2_transactions": [
+      {
+        "fund_number": 5128871,
+        "fund_name": "הראל עוקבת תיק 3הבינלאומי",
+        "security_name": "סימד הולדינגס אגח א",
+        "security_number": "1232875",
+        "quantity": 600000.0,
+        "price": 98.5,
+        "date": "02-12-2025",
+        "type": 31,
+        "decision_method": 2
+      }
+    ]
+  }
+]

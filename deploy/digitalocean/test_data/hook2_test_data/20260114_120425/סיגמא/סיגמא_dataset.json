@@ -1,0 +1,22 @@
+[
+  {
+    "downloadedFiles": [
+      {
+        "fileName": "report_latest_month.csv",
+        "originalName": "1705034.csv",
+        "size": 6488688,
+        "reportName": "דוח חודשי-אוקטובר 2025",
+        "company": "סיגמא"
+      },
+      {
+        "fileName": "report_previous_month.csv",
+        "originalName": "1699063.csv",
+        "size": 6477401,
+        "reportName": "דוח חודשי-ספטמבר 2025",
+        "company": "סיגמא"
+      }
+    ],
+    "timestamp": "2026-01-14T12:05:34.750Z",
+    "status": "success"
+  }
+]

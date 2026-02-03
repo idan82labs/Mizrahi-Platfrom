@@ -1,72 +1,30 @@
-# Git Workflow
+# Git Workflow - Legacy Branch
 
-Branch strategy and commit conventions for the project.
+> **CRITICAL WARNING**: This is the `legacy/digitalocean-hosting` branch.
+> **DO NOT merge this branch into `dev` or `main`**.
+> This branch is maintained separately for standalone Digital Ocean deployment.
 
-## Branch Strategy
+## Legacy Branch Rules
 
-```
-main (production)
-  ↑ merges from dev only
-dev (integration)
-  ↑ merges from feature branches
-feature/*, fix/*, etc.
-  ↑ created from dev
-```
+### NEVER Merge to Main Branches
 
-## Protected Branches
+This branch (`legacy/digitalocean-hosting`) must **NEVER** be merged into:
 
-### `main` (Production)
-- NEVER commit directly
-- NEVER push directly
-- Only receives merges from `dev`
-- Represents production-ready code
+- `main` (production)
+- `dev` (integration)
 
-### `dev` (Integration)
-- NEVER commit directly
-- NEVER push directly
-- Receives merges from feature branches
-- Integration testing happens here
+This is a standalone legacy deployment that differs significantly from the main codebase architecture.
 
-## Branch Types
+### Allowed Operations
 
-| Type | Pattern | Created From | Merges To | Purpose |
-|------|---------|--------------|-----------|---------|
-| `feature/` | `feature/<description>` | `dev` | `dev` | New functionality |
-| `fix/` | `fix/<description>` | `dev` | `dev` | Bug fixes |
-| `hotfix/` | `hotfix/<description>` | `main` | `main` → `dev` | Urgent production fixes |
-| `refactor/` | `refactor/<description>` | `dev` | `dev` | Code improvements |
-| `docs/` | `docs/<description>` | `dev` | `dev` | Documentation only |
-| `test/` | `test/<description>` | `dev` | `dev` | Test additions |
-| `chore/` | `chore/<description>` | `dev` | `dev` | Build, deps, config |
-
-## Branch Naming
-
-### Rules
-- Lowercase only
-- Use hyphens to separate words (not underscores)
-- Max 50 characters for description
-- Be specific but concise
-
-### Format
-```
-<type>/<description>
-<type>/<ticket-id>-<description>
-```
-
-### Examples
-```
-feature/user-dashboard
-feature/MIZ-123-add-validation
-fix/login-error-handling
-hotfix/critical-api-bug
-refactor/hook-base-class
-docs/api-reference
-chore/update-dependencies
-```
+- Make fixes and updates directly on this branch
+- Commit changes for bug fixes and improvements
+- Keep the deployment working and up-to-date
 
 ## Commit Messages
 
 ### Format (Conventional Commits)
+
 ```
 <type>(<scope>): <description>
 
@@ -76,101 +34,69 @@ chore/update-dependencies
 ```
 
 ### Types
+
 - `feat` — New feature
 - `fix` — Bug fix
 - `docs` — Documentation only
 - `style` — Formatting (no code change)
 - `refactor` — Code change (no feature/fix)
-- `perf` — Performance improvement
-- `test` — Adding tests
 - `chore` — Build, deps, config
 
-### Scope (Optional)
-- `api` — Backend changes
-- `web` — Frontend changes
-- `hooks` — Hooks package
-- `shared` — Shared package
-- `config` — Configuration
+### Scope (Optional for Legacy)
+
+- `server` — FastAPI server changes
+- `hook1` — Hook 1 (Monthly Report)
+- `hook2` — Hook 2 (Special Transactions)
+- `frontend` — Frontend changes
+- `config` — Configuration changes
 
 ### Examples
+
 ```
-feat(api): add hook execution endpoint
-fix(hooks): correct price variance calculation
-docs(api): update API reference
-refactor(shared): simplify email service
-test(hooks): add completeness check tests
+fix(hook2): correct event ID for special transactions
+feat(server): add monthly report endpoint
+docs: update README for legacy hosting
 chore: update Python dependencies
 ```
 
-## Workflow
+## Making Changes
 
-### Starting New Work
+### Direct Commits (Allowed on Legacy)
+
 ```bash
-# Ensure you're on dev and up-to-date
-git checkout dev
-git pull origin dev
-
-# Create feature branch
-git checkout -b feature/my-feature
-```
-
-### Making Commits
-```bash
-# Stage changes
+# Make changes
 git add <files>
-
-# Commit with conventional message
-git commit -m "feat(scope): description"
+git commit -m "fix(server): description"
+git push origin legacy/digitalocean-hosting
 ```
 
-### Before Creating PR
-1. Run all tests
-2. Fix TypeScript errors
-3. Run linters
-4. Update documentation if needed
-5. Squash WIP commits
+### For Complex Changes
 
-### Creating PR
 ```bash
-# Push branch
-git push -u origin feature/my-feature
-
-# Create PR via GitHub
-# Target: dev (not main!)
-```
-
-### Hotfix Process
-```bash
-# Create from main
-git checkout main
-git pull origin main
-git checkout -b hotfix/critical-bug
-
-# Fix and commit
+# Create a sub-branch
+git checkout -b legacy/fix-something
+# Make changes
 git add .
-git commit -m "hotfix: fix critical bug"
-
-# Create PR to main
-git push -u origin hotfix/critical-bug
-
-# After merge to main, also merge to dev
-git checkout dev
-git merge main
-git push origin dev
+git commit -m "fix: description"
+# Merge back to legacy branch
+git checkout legacy/digitalocean-hosting
+git merge legacy/fix-something
+git branch -d legacy/fix-something
+git push origin legacy/digitalocean-hosting
 ```
 
 ## Rules
 
 ### NEVER Do
-- Commit directly to `main` or `dev`
-- Force push to any branch
+
+- Merge into `main` or `dev`
+- Create PRs targeting `main` or `dev`
 - Commit secrets or credentials
 - Leave merge conflict markers
-- Commit commented-out code
 
 ### ALWAYS Do
-- Create branches from `dev` (except hotfixes)
-- Use descriptive branch names
-- Write meaningful commit messages
-- Squash WIP commits before merge
-- Delete branches after merge
+
+- Keep changes isolated to this branch
+- Test deployments before committing
+- Update documentation when making changes
+- Use descriptive commit messages

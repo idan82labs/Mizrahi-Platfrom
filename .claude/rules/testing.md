@@ -1,173 +1,85 @@
-# Testing Rules
+# Testing Rules - Legacy Hosting
 
-Guidelines for testing across the codebase.
+Guidelines for testing the legacy deployment.
 
-## Test Requirements by Change Type
+## Test Methods
 
-### Major Changes (Run Full Suite + New Tests)
-- Features affecting multiple modules
-- Database schema changes
-- API endpoint changes
-- Configuration file changes
-- Changes to shared packages
+### Manual Testing (Primary)
 
-### Minor Changes (Targeted Tests + New Tests)
-- Single-module features
-- Bug fixes in isolated code
-- UI component updates
-- Utility function changes
+For standalone Python scripts, use the test scripts:
 
-### No Tests Required
-- Documentation-only changes
-- Comment updates
-- README updates
+```bash
+cd deploy/digitalocean
 
-## Test Structure
+# Test Hook 2 offline (no Apify needed)
+./test_offline_hook2.sh סיגמא
 
-### Arrange-Act-Assert Pattern
-```python
-def test_validate_manager():
-    # Arrange
-    input_data = {"manager_name": "מגדל", "email": "test@test.com"}
-
-    # Act
-    result = validate_manager(input_data)
-
-    # Assert
-    assert result.is_valid
-    assert result.error is None
+# Test Hook 1 (requires Apify token)
+./test_hook1.sh סיגמא
 ```
 
-### Descriptive Names
-- Format: `test_<function>_<condition>_<expected>`
-- Examples:
-  - `test_validate_input_with_missing_email_returns_error`
-  - `test_fetch_data_with_invalid_manager_raises_not_found`
-  - `test_completeness_check_with_missing_funds_fails`
+### API Testing
 
-## What to Test
+Test the FastAPI server endpoints:
 
-### DO Test
-- Public API functions
-- Business logic (validation checks)
-- Error handling paths
-- Edge cases (empty, null, boundary values)
-- Integration between components
+```bash
+# Start server
+cd deploy/digitalocean
+python server.py
 
-### DON'T Test
-- Private/internal functions directly
-- Third-party library behavior
-- Implementation details
-- Trivial getters/setters
+# Test health endpoint
+curl http://localhost:8000/
 
-## Mocking
+# Test managers endpoint
+curl http://localhost:8000/api/managers
 
-### Mock at Boundaries Only
-- External APIs (Apify, Resend)
-- Database
-- File system
-- Network calls
+# Test Hook 2
+curl -X POST http://localhost:8000/api/process-report \
+  -H "Content-Type: application/json" \
+  -d '{"manager_name": "סיגמא", "email": "test@test.com"}'
 
-### Don't Mock
-- Internal modules
-- Utility functions
-- Data transformations
+# Test Hook 1
+curl -X POST http://localhost:8000/api/process-monthly-report \
+  -H "Content-Type: application/json" \
+  -d '{"manager_name": "סיגמא", "email": "test@test.com"}'
+```
 
-```python
-# Good - mocking external service
-@pytest.fixture
-def mock_apify():
-    with patch('mizrahi_shared.apify.ApifyClient') as mock:
-        yield mock
+### Frontend Testing
 
-# Bad - mocking internal function
-@pytest.fixture
-def mock_validate():  # Don't do this
-    with patch('mizrahi_hooks.monthly_report.validate_input') as mock:
-        yield mock
+```bash
+cd frontend
+npm run dev
+# Open http://localhost:5173
 ```
 
 ## Test Data
 
-### Use Fixtures
-```python
-@pytest.fixture
-def sample_manager():
-    return Manager(
-        key="migdal",
-        id="10040",
-        name_he="מגדל",
-        name_en="Migdal",
-    )
+Test data files are located in:
 
-@pytest.fixture
-def sample_hook_config():
-    return HookConfig(
-        id="monthly_report",
-        name="Monthly Report",
-        # ...
-    )
-```
+- `deploy/digitalocean/test_data/` - Sample manager reports and Magna files
 
-### Factory Functions for Complex Data
-```python
-def create_transaction(**overrides) -> TransactionRow:
-    defaults = {
-        "row_index": 1,
-        "fund_id": 12345,
-        "security_no": 100,
-        "quantity": 1000.0,
-        "price": 10.50,
-    }
-    return TransactionRow(**{**defaults, **overrides})
-```
+## What to Test
 
-## Coverage Requirements
+### Before Committing
 
-- New code must have tests
-- Aim for 80%+ coverage on changed files
-- Critical paths (validation logic) should have 100% coverage
+- Server starts without errors
+- Health endpoint responds
+- Managers endpoint returns correct data
+- Hook endpoints accept requests
 
-## TypeScript Errors
+### Before Deployment
 
-**All TypeScript errors must be fixed before commit.**
+- Full hook execution with test manager
+- Report generation completes
+- Email sending (if enabled)
 
-Run type checking:
+## TypeScript Errors (Frontend)
+
+All TypeScript errors must be fixed before commit:
+
 ```bash
-pnpm typecheck
+cd frontend
+npm run build
 ```
 
-## Running Tests
-
-### Python
-```bash
-# All tests
-cd apps/api && uv run pytest
-
-# Specific file
-cd apps/api && uv run pytest tests/test_hooks.py
-
-# Specific test
-cd apps/api && uv run pytest tests/test_hooks.py::test_validate_input
-
-# With coverage
-cd apps/api && uv run pytest --cov=src --cov-report=html
-```
-
-### TypeScript (planned)
-```bash
-# All tests
-pnpm test
-
-# Specific file
-pnpm test -- tests/Component.test.tsx
-```
-
-## CI/CD Integration
-
-Tests run automatically on:
-- Pull request creation
-- Push to `dev` branch
-- Before merge to `main`
-
-Failing tests block the merge.
+Build failures indicate TypeScript errors that need fixing.

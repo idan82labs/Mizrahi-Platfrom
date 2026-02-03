@@ -2,28 +2,18 @@
   "name": "mizrahi-compliance-platform",
   "version": "1.0.0",
   "private": true,
-  "description": "Mizrahi Fund Automation System - Regulatory Compliance Validation Platform",
+  "description": "Mizrahi Fund Automation System - Legacy Digital Ocean Hosting",
   "repository": {
     "type": "git",
     "url": "https://github.com/idan82labs/Mizrahi-Platfrom.git"
   },
   "scripts": {
-    "dev": "pnpm run --parallel dev",
-    "dev:web": "pnpm --filter web dev",
-    "dev:api": "cd apps/api && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
-    "build": "pnpm run --parallel build",
-    "build:web": "pnpm --filter web build",
-    "lint": "pnpm run --parallel lint",
-    "lint:web": "pnpm --filter web lint",
-    "lint:py": "cd apps/api && uv run ruff check .",
-    "test": "pnpm run --parallel test",
-    "test:py": "cd apps/api && uv run pytest",
-    "typecheck": "pnpm --filter web typecheck",
-    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "lint": "cd frontend && npm run lint",
+    "preview": "cd frontend && npm run preview"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
-  },
-  "packageManager": "pnpm@9.15.0"
+    "node": ">=20.0.0"
+  }
 }

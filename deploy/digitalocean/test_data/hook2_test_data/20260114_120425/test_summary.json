@@ -1,0 +1,23 @@
+{
+  "test_date": "2026-01-14T12:05:43.592267",
+  "actor_id": "5lhI6O39Qbgv9O0gs",
+  "build_id": "nQh62mdhpUTM5l65l",
+  "total_managers": 1,
+  "successful": 1,
+  "no_data": 0,
+  "failed": 0,
+  "results": [
+    {
+      "manager_name": "סיגמא",
+      "fund_code": "10048",
+      "status": "success",
+      "files_saved": [
+        "special_transactions_test/20260114_120425/סיגמא/סיגמא_report_latest_month_csv.csv",
+        "special_transactions_test/20260114_120425/סיגמא/סיגמא_report_previous_month_csv.csv",
+        "special_transactions_test/20260114_120425/סיגמא/סיגמא_dataset.json"
+      ],
+      "run_id": "E1rcRcCxLnzBQVQrC",
+      "kv_store_id": "jC1YaSJhmJ2NiLEuf"
+    }
+  ]
+}

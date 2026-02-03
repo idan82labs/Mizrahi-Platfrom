@@ -1,0 +1,71 @@
+{
+  "test_date": "2026-01-14T11:48:21.983413",
+  "actor_id": "5lhI6O39Qbgv9O0gs",
+  "build_id": "nQh62mdhpUTM5l65l",
+  "total_managers": 10,
+  "successful": 0,
+  "no_data": 0,
+  "failed": 10,
+  "results": [
+    {
+      "manager_name": "מגדל",
+      "fund_code": "10040",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "איילון",
+      "fund_code": "10054",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "קסם",
+      "fund_code": "10047",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "סיגמא",
+      "fund_code": "10048",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "פורסט",
+      "fund_code": "10082",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "הראל",
+      "fund_code": "10031",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "אנליסט",
+      "fund_code": "10019",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "מיטב",
+      "fund_code": "10083",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "איביאי",
+      "fund_code": "10068",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    },
+    {
+      "manager_name": "אלטשולר-שחם",
+      "fund_code": "10017",
+      "status": "failed",
+      "error": "404 Client Error: Not Found for url: https://api.apify.com/v2/acts/5lhI6O39Qbgv9O0gs/builds/nQh62mdhpUTM5l65l/runs?timeout=300"
+    }
+  ]
+}

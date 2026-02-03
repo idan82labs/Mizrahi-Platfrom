@@ -1,7 +1,10 @@
 # Fund Manager Configuration
-# This is the single source of truth for fund manager definitions
+# Used by deploy/digitalocean/server.py
 
 version: "1.0"
+
+# Trustee name for filtering
+trustee_name: "מזרחי טפחות"
 
 managers:
   migdal:
@@ -70,3 +73,8 @@ apify:
   reports_actor: "5lhI6O39Qbgv9O0gs"
   timeout_seconds: 300
   max_retries: 3
+
+# Maya TASE event IDs for report downloads
+maya_event_ids:
+  monthly_report: 5615      # Hook 1 - דוח חודשי
+  special_transactions: 5618 # Hook 2 - עסקאות מיוחדות

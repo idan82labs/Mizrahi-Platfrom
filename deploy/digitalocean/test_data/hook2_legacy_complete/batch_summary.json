@@ -1,0 +1,53 @@
+{
+  "date": "2026-01-17T19:01:41.296039",
+  "total": 6,
+  "successful": 5,
+  "failed": 1,
+  "results": [
+    {
+      "manager_name": "איילון",
+      "manager_code": "10054",
+      "output_xlsx": "test_batch_output/20260117_184128/איילון/איילון_special_transactions_report.xlsx",
+      "email_json": "test_batch_output/20260117_184128/איילון/איילון_email.json",
+      "csv_path": "test_batch_output/20260117_184128/איילון/איילון_special_transactions.csv",
+      "status": "success"
+    },
+    {
+      "manager_name": "סיגמא",
+      "manager_code": "10048",
+      "output_xlsx": "test_batch_output/20260117_184128/סיגמא/סיגמא_special_transactions_report.xlsx",
+      "email_json": "test_batch_output/20260117_184128/סיגמא/סיגמא_email.json",
+      "csv_path": "test_batch_output/20260117_184128/סיגמא/סיגמא_special_transactions.csv",
+      "status": "success"
+    },
+    {
+      "manager_name": "פורסט",
+      "manager_code": "10082",
+      "output_xlsx": "test_batch_output/20260117_184128/פורסט/פורסט_special_transactions_report.xlsx",
+      "email_json": "test_batch_output/20260117_184128/פורסט/פורסט_email.json",
+      "csv_path": "test_batch_output/20260117_184128/פורסט/פורסט_special_transactions.csv",
+      "status": "success"
+    },
+    {
+      "manager_name": "הראל",
+      "manager_code": "10031",
+      "output_xlsx": "test_batch_output/20260117_184128/הראל/הראל_special_transactions_report.xlsx",
+      "email_json": "test_batch_output/20260117_184128/הראל/הראל_email.json",
+      "csv_path": "test_batch_output/20260117_184128/הראל/הראל_special_transactions.csv",
+      "status": "success"
+    },
+    {
+      "manager_name": "מיטב",
+      "manager_code": "10083",
+      "output_xlsx": "test_batch_output/20260117_184128/מיטב/מיטב_special_transactions_report.xlsx",
+      "email_json": "test_batch_output/20260117_184128/מיטב/מיטב_email.json",
+      "csv_path": "test_batch_output/20260117_184128/מיטב/מיטב_special_transactions.csv",
+      "status": "success"
+    },
+    {
+      "manager_name": "אלטשולר-שחם",
+      "status": "failed",
+      "error": "Traceback (most recent call last):\n  File \"/root/mizrahi-test-env/mizrahi_special_transactions.py\", line 2469, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/root/mizrahi-test-env/mizrahi_special_transactions.py\", line 2324, in main\n    rows, meta = load_manager_report(args.input_report)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/mizrahi-test-env/mizrahi_special_transactions.py\", line 610, in load_manager_report\n    return load_manager_re"
+    }
+  ]
+}

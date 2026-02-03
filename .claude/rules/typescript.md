@@ -1,7 +1,7 @@
 ---
 paths:
-  - "apps/web/**/*.ts"
-  - "apps/web/**/*.tsx"
+  - "frontend/**/*.ts"
+  - "frontend/**/*.tsx"
 ---
 
 # TypeScript Rules
@@ -14,7 +14,6 @@ Rules for TypeScript and React code in the frontend.
 - Explicit return types on exported functions
 - Use `interface` for object shapes, `type` for unions/intersects
 - Prefer `T | null` over `T | undefined` for optional values
-- Use strict null checks (will be enabled)
 
 ## React Components
 
@@ -22,7 +21,6 @@ Rules for TypeScript and React code in the frontend.
 - Use PascalCase for component names and files
 - Props interface: `interface ComponentNameProps {}`
 - Destructure props in function signature
-- Use `React.FC` sparingly — prefer explicit return type
 
 ```tsx
 // Preferred
@@ -41,7 +39,7 @@ export function Button({ label, onClick }: ButtonProps): JSX.Element {
 - Custom hooks must start with `use` prefix
 - Keep hooks focused on single responsibility
 - Extract complex logic from components into hooks
-- Specify dependency arrays completely (no eslint-disable)
+- Specify dependency arrays completely
 
 ## State Management
 
@@ -54,40 +52,45 @@ export function Button({ label, onClick }: ButtonProps): JSX.Element {
 
 ```typescript
 // 1. React
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 // 2. External libraries
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
 // 3. Internal - components
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 
 // 4. Internal - utilities
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 // 5. Types
-import type { User } from '@/types';
+import type { User } from "@/types";
 ```
 
 ## Path Aliases
 
 - Use `@/` for imports from `src/`
-- Never use relative paths going up more than one level (`../../`)
+- Never use relative paths going up more than one level
 
 ## Patterns
 
 ### Conditional Rendering
+
 ```tsx
 // Preferred
-{isLoading && <Spinner />}
-{error && <ErrorMessage error={error} />}
-{data && <DataDisplay data={data} />}
-
-// Avoid
-{isLoading ? <Spinner /> : error ? <ErrorMessage /> : <DataDisplay />}
+{
+  isLoading && <Spinner />;
+}
+{
+  error && <ErrorMessage error={error} />;
+}
+{
+  data && <DataDisplay data={data} />;
+}
 ```
 
 ### Event Handlers
+
 ```tsx
 // Inline for simple handlers
 <button onClick={() => setCount(c => c + 1)}>
@@ -98,10 +101,3 @@ const handleSubmit = useCallback((e: FormEvent) => {
   // complex logic
 }, [dependencies]);
 ```
-
-## Testing
-
-- Test files: `Component.test.tsx` next to `Component.tsx`
-- Use React Testing Library
-- Test user behavior, not implementation
-- Mock API calls with MSW or similar

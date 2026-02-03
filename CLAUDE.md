@@ -1,4 +1,8 @@
-# Project: Mizrahi Compliance Platform
+# Project: Mizrahi Compliance Platform - Legacy Hosting
+
+> **BRANCH WARNING**: This is the `legacy/digitalocean-hosting` branch.
+> **DO NOT merge this branch into `dev` or `main`**.
+> This branch is maintained separately for standalone Digital Ocean deployment.
 
 Regulatory compliance validation platform for Israeli mutual funds managed by
 Mizrahi Tefachot trustee. Automates validation of monthly reports and special
@@ -6,7 +10,7 @@ transactions against regulatory requirements.
 
 ## Tech Stack
 
-### Frontend (apps/web/)
+### Frontend (frontend/)
 
 - React 18.3 + TypeScript 5.8
 - Vite 5.4 (build tool)
@@ -15,86 +19,136 @@ transactions against regulatory requirements.
 - React Hook Form + Zod (forms/validation)
 - Recharts (visualizations)
 
-### Backend (apps/api/)
+### Backend (deploy/digitalocean/)
 
 - Python 3.11+
-- FastAPI 0.109+
-- SQLModel + Alembic (database)
-- Pydantic v2 (validation)
-- APScheduler (task scheduling)
-- uv (package manager)
-
-### Packages
-
-- `packages/hooks/` - Validation hook implementations
-- `packages/shared/` - Shared utilities, models, config
-
-### External Services
-
-- Apify - Web scraping (TASE Maya)
-- Resend - Email notifications
-- PostgreSQL (production) / SQLite (development)
+- FastAPI (unified server)
+- Standalone Python scripts for hook processing
+- Apify for web scraping (TASE Maya)
+- Resend for email notifications (optional)
 
 ## Project Structure
 
 ```
 mizrahi-compliance-platform/
-├── apps/
-│   ├── web/                 # React frontend
-│   │   └── src/
-│   │       ├── pages/       # Route pages
-│   │       ├── components/  # UI components
-│   │       └── hooks/       # React hooks
-│   └── api/                 # FastAPI backend
-│       └── src/
-│           ├── routers/     # API endpoints
-│           ├── services/    # Business logic
-│           └── db/          # Database models
-├── packages/
-│   ├── hooks/               # Validation hooks
-│   │   └── src/mizrahi_hooks/
-│   │       ├── monthly_report/
-│   │       └── special_transactions/
-│   └── shared/              # Shared utilities
-│       └── src/mizrahi_shared/
-├── config/
-│   ├── hooks.yaml           # Hook definitions
-│   ├── managers.yaml        # Fund manager configs
-│   └── environments/        # Environment configs
-├── legacy/                  # Original scripts (reference only)
-└── docs/                    # Documentation
+├── frontend/                   # React frontend
+│   ├── src/
+│   ├── package.json
+│   └── ...
+│
+├── deploy/
+│   └── digitalocean/          # Main deployment code
+│       ├── server.py          # Unified FastAPI server
+│       ├── scripts/
+│       │   ├── mizrahi_special_transactions.py  # Hook 2 processor
+│       │   ├── fund_automation_complete.py      # Hook 1 processor
+│       │   └── batch_*.py
+│       ├── test_data/         # Test data for validation
+│       ├── config/            # Local config
+│       └── README.md
+│
+├── config/                    # YAML configuration
+│   ├── hooks.yaml            # Hook definitions
+│   └── managers.yaml         # Fund manager mappings
+│
+├── docs/                      # Documentation
+│
+├── .claude/                   # Claude Code configuration
+│
+└── README.md                  # This file
 ```
 
 ## Commands
 
-### Development
+### Server Deployment (Digital Ocean)
 
-- `pnpm dev` — Run all services (frontend + API)
-- `pnpm dev:web` — Frontend only (http://localhost:5173)
-- `pnpm dev:api` — API only (http://localhost:8000)
+```bash
+cd deploy/digitalocean
 
-### Building
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-- `pnpm build` — Build all packages
-- `pnpm build:web` — Build frontend only
+# Install dependencies
+pip install -r requirements.txt
 
-### Testing
+# Set environment variables
+export APIFY_API_TOKEN="your_token"
+export RESEND_API_KEY="your_key"  # Optional
 
-- `pnpm test` — Run all tests
-- `pnpm test:py` — Run Python tests only
-- `cd apps/api && uv run pytest tests/path/to/test.py` — Run specific test
+# Run server
+python server.py
+# Server runs on http://0.0.0.0:8000
+```
 
-### Linting & Type Checking
+### Frontend Development
 
-- `pnpm lint` — Lint all packages
-- `pnpm lint:py` — Python linting (ruff)
-- `pnpm typecheck` — TypeScript type checking
+```bash
+cd frontend
 
-### Python Package Management
+# Install dependencies
+npm install
 
-- `cd apps/api && uv sync` — Install Python dependencies
-- `cd apps/api && uv add <package>` — Add new dependency
-- `cd apps/api && uv run <command>` — Run in virtual environment
+# Start development server
+npm run dev
+# Frontend runs on http://localhost:5173
+
+# Build for production
+npm run build
+```
+
+### Testing Hooks
+
+```bash
+cd deploy/digitalocean
+
+# Test Hook 2 offline (no Apify needed)
+./test_offline_hook2.sh סיגמא
+
+# Test Hook 1 (requires Apify token)
+./test_hook1.sh סיגמא
+```
+
+## API Endpoints
+
+| Endpoint                      | Method | Description                   |
+| ----------------------------- | ------ | ----------------------------- |
+| `/`                           | GET    | Health check                  |
+| `/api/managers`               | GET    | List fund managers            |
+| `/api/process-report`         | POST   | Hook 2 - Special Transactions |
+| `/api/process-monthly-report` | POST   | Hook 1 - Monthly Report       |
+| `/api/job/{job_id}`           | GET    | Get job status                |
+| `/api/download/{filename}`    | GET    | Download generated report     |
+
+## Hooks
+
+### Hook 1: Monthly Report Validation (Event ID: 5615)
+
+Validates monthly fund holdings reports against Magna list.
+
+**Checks:**
+
+1. Completeness - Cross-reference Magna vs Manager reports
+2. Unusual Assets - Flag unusual asset types
+3. New Assets - New assets since previous month
+4. Quantity Changes - Unusual changes month-over-month
+5. Clause 328 - Borrowed quantity consistency
+6. Required Combinations - Asset type combinations (Clause 214)
+7. Price Reasonableness - Price ratio validation
+
+### Hook 2: Special Transactions Validation (Event ID: 5618)
+
+Validates coordinated and off-exchange trades.
+
+**Checks:**
+
+1. Inter-fund Transactions - Buy/sell pairs detection
+2. Date Validation - Dates within report month
+3. Decision Method - Decision method rules
+4. דח״צ Voting - External director voting rules
+5. Sampling - Random samples for verification
+6. Price Checks - Price > 100 and internal comparison
+7. Problematic Securities - Warning/halt/restricted lists
 
 ## Code Conventions
 
@@ -110,103 +164,31 @@ mizrahi-compliance-platform/
 - Prefer named exports over default exports
 - Use `@/` path alias for imports from src/
 - Components in PascalCase, hooks use `use` prefix
-- Colocate tests: `Component.tsx` → `Component.test.tsx`
 
 ### Python (Backend)
 
 - Async functions for I/O operations
-- Type hints required on all function signatures
-- Pydantic models for all API request/response schemas
-- Use `ruff format` for formatting, `ruff check` for linting
+- Type hints on function signatures
+- Keep scripts standalone and self-contained
 
 ### Hebrew Content
 
 - Hebrew names allowed in user-facing output (UI, reports, emails)
 - Internal code uses English identifiers
-- Database stores Hebrew with proper UTF-8 encoding
 - Config files use Hebrew for display names (`name_he`)
-
-## Architecture Rules
-
-### Hook System (Template Method Pattern)
-
-```
-BaseHook.execute() orchestrates:
-1. validate_input() → Validate request
-2. fetch_data() → Call Apify/APIs
-3. run_checks() → Execute validation checks
-4. generate_report() → Create Excel output
-5. send_email() → Notify recipients
-```
-
-### API Response Format
-
-```json
-{
-  "data": {},
-  "error": null,
-  "meta": { "timestamp": "...", "version": "..." }
-}
-```
-
-### Data Flow
-
-```
-Frontend → API Router → Service → Hook → Check Functions
-                                       ↓
-                              External APIs (Apify)
-                                       ↓
-                              Report Generation
-                                       ↓
-                              Email Notification
-```
 
 ## Git Workflow
 
-### Branch Strategy
+### CRITICAL: Branch Rules
 
-- `main` — Production (protected, receives merges from dev only)
-- `dev` — Integration (protected, receives merges from feature branches)
-- `feature/<description>` — New functionality
-- `fix/<description>` — Bug fixes
-- `hotfix/<description>` — Urgent production fixes (from main)
-- `refactor/<description>` — Code improvements
-- `docs/<description>` — Documentation only
-- `chore/<description>` — Build, deps, config
+> **This branch (`legacy/digitalocean-hosting`) must NEVER be merged into `dev` or `main`.**
+> It is maintained as a standalone legacy deployment.
 
-### Rules
+### For This Branch Only
 
-- NEVER commit directly to `main` or `dev`
-- Create feature branches from `dev`
-- Use conventional commits: `type(scope): description`
-- Squash commits before merge
-
-### Branch Naming
-
-- Lowercase with hyphens: `feature/user-dashboard`
-- Max 50 characters for description
-- Optional ticket ID: `feature/TICKET-123-description`
-
-## Testing Rules
-
-### When to Run Full Suite
-
-- Major features affecting multiple modules
-- Major fixes that might affect other parts
-- Before merging to `dev`
-- Config file changes
-
-### When to Run Targeted Tests
-
-- Minor features (single module)
-- Minor bug fixes
-- Documentation changes → No tests required
-
-### Coverage Requirements
-
-- New code must have tests
-- All TypeScript errors must be fixed before commit
-- All linting warnings must be addressed
+- Make fixes and updates directly on this branch
+- Keep changes isolated from the main development workflow
+- Document any significant changes in the README
 
 ## Security
 
@@ -215,14 +197,20 @@ Frontend → API Router → Service → Hook → Check Functions
 - Never log fund data, transaction details, or PII
 - Never expose validation rules in error messages
 - All input validation happens server-side
-- Audit trail for all hook executions
 
 ### General
 
 - Never hardcode secrets — use environment variables
 - Never commit .env, credentials, or API keys
-- Parameterized queries only — no string concatenation
 - Validate all user input
+
+## Environment Variables
+
+| Variable          | Required | Description                                      |
+| ----------------- | -------- | ------------------------------------------------ |
+| `APIFY_API_TOKEN` | Yes      | Apify API token for data fetching                |
+| `RESEND_API_KEY`  | No       | Resend API key for email sending                 |
+| `OUTPUT_DIR`      | No       | Output directory (default: /tmp/mizrahi-outputs) |
 
 ## Domain Context
 
@@ -230,36 +218,19 @@ Frontend → API Router → Service → Hook → Check Functions
 
 מגדל, איילון, קסם, סיגמא, פורסט, הראל, אנליסט, מיטב, איביאי, אלטשולר-שחם
 
-### Validation Hooks
+### Maya TASE Event IDs
 
-1. **monthly_report** (Active) — Monthly fund holdings validation
-2. **special_transactions** (Development) — Special transactions validation
-3. **financial_report** (Planned) — Financial report validation
+- **5615** — Monthly Report (Hook 1)
+- **5618** — Special Transactions (Hook 2)
 
 ### Configuration Files
 
-- `config/hooks.yaml` — Hook definitions, checks, schedules
-- `config/managers.yaml` — Fund manager mappings
-- `config/environments/` — Environment-specific settings
-
-## Legacy Reference
-
-Original implementations preserved in `legacy/` directory:
-
-- `legacy/scripts/` — Original Python scripts
-- `legacy/workflows/` — n8n workflow definitions
-- `legacy/docs/` — Original documentation
-
-Use for debugging and verifying new implementation matches original behavior.
-See @docs/reference/LEGACY_FILES_REFERENCE.md for details.
+- `config/hooks.yaml` — Hook definitions, checks, parameters
+- `config/managers.yaml` — Fund manager mappings, Apify config
 
 ## Documentation
 
-See @docs/README.md for documentation index.
-
-Key documents:
-
-- @docs/architecture/ — System architecture (split into focused documents)
-- @docs/guides/DEVELOPMENT.md — Development setup
-- @docs/guides/HOOKS_DEVELOPMENT.md — Creating hooks
-- @docs/api/API_REFERENCE.md — API endpoints
+- @docs/README.md — Documentation index
+- @docs/guides/SYSTEM_GUIDE.md — System operations guide
+- @docs/guides/BATCH_PROCESSING.md — Batch processing guide
+- @deploy/digitalocean/README.md — Deployment documentation

@@ -1,0 +1,17 @@
+{
+  "test_date": "2026-01-14T12:04:11.042069",
+  "actor_id": "5lhI6O39Qbgv9O0gs",
+  "build_id": "nQh62mdhpUTM5l65l",
+  "total_managers": 1,
+  "successful": 0,
+  "no_data": 0,
+  "failed": 1,
+  "results": [
+    {
+      "manager_name": "סיגמא",
+      "fund_code": "10048",
+      "status": "failed",
+      "error": "Expecting value: line 1 column 1 (char 0)"
+    }
+  ]
+}

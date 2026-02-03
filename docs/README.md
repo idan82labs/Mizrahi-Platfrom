@@ -1,110 +1,64 @@
 # Mizrahi Compliance Platform Documentation
 
-Welcome to the documentation for the Mizrahi Compliance Platform.
+> **BRANCH WARNING**: This is the `legacy/digitalocean-hosting` branch.
+> **DO NOT merge this branch into `dev` or `main`**.
+
+Welcome to the documentation for the Mizrahi Compliance Platform (Legacy Hosting).
 
 ---
 
-## Documentation Register
+## Quick Start
 
-Quick lookup: **Which docs cover which code areas?**
+### Server Deployment
 
-### By Code Area
+```bash
+cd deploy/digitalocean
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+export APIFY_API_TOKEN="your_token"
+python server.py
+```
 
-| Code Area               | Files Changed                                  | Update These Docs                                                                                     |
-| ----------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **API Endpoints**       | `apps/api/src/routers/*`                       | [API Reference](./api/API_REFERENCE.md)                                                               |
-| **API Main/Config**     | `apps/api/src/main.py`                         | [API Reference](./api/API_REFERENCE.md), [Development](./guides/DEVELOPMENT.md)                       |
-| **Hook Implementation** | `packages/hooks/src/mizrahi_hooks/*/hook.py`   | [System Documentation](./SYSTEM_DOCUMENTATION.md), [Hooks Development](./guides/HOOKS_DEVELOPMENT.md) |
-| **Check Functions**     | `packages/hooks/src/mizrahi_hooks/*/checks/*`  | [System Documentation](./SYSTEM_DOCUMENTATION.md)                                                     |
-| **Shared Models**       | `packages/shared/src/mizrahi_shared/models.py` | [Hooks Development](./guides/HOOKS_DEVELOPMENT.md)                                                    |
-| **Shared Utilities**    | `packages/shared/src/mizrahi_shared/*`         | [Hooks Development](./guides/HOOKS_DEVELOPMENT.md)                                                    |
-| **Hook Config**         | `config/hooks.yaml`                            | [System Documentation](./SYSTEM_DOCUMENTATION.md), [Development](./guides/DEVELOPMENT.md)             |
-| **Manager Config**      | `config/managers.yaml`                         | [System Documentation](./SYSTEM_DOCUMENTATION.md)                                                     |
-| **Frontend Pages**      | `apps/web/src/pages/*`                         | [System Documentation](./SYSTEM_DOCUMENTATION.md)                                                     |
-| **Frontend Components** | `apps/web/src/components/*`                    | No doc update needed (unless major)                                                                   |
-| **Package.json**        | `package.json`, `apps/*/package.json`          | [Development](./guides/DEVELOPMENT.md)                                                                |
-| **Python Dependencies** | `pyproject.toml`, `apps/api/pyproject.toml`    | [Development](./guides/DEVELOPMENT.md)                                                                |
-| **Legacy Scripts**      | `legacy/*`                                     | [Legacy Files Reference](./reference/LEGACY_FILES_REFERENCE.md)                                       |
+### Frontend Development
 
-### By Task
-
-| Task                           | Relevant Documentation                                                                                    |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| **Setting up development**     | [Development Guide](./guides/DEVELOPMENT.md)                                                              |
-| **Creating a new hook**        | [Hooks Development](./guides/HOOKS_DEVELOPMENT.md)                                                        |
-| **Adding a new check**         | [Hooks Development](./guides/HOOKS_DEVELOPMENT.md), [System Documentation](./SYSTEM_DOCUMENTATION.md)     |
-| **Adding API endpoint**        | [API Reference](./api/API_REFERENCE.md)                                                                   |
-| **Batch processing**           | [Batch Processing](./guides/BATCH_PROCESSING.md)                                                          |
-| **Debugging hooks**            | [Legacy Files Reference](./reference/LEGACY_FILES_REFERENCE.md), [System Guide](./guides/SYSTEM_GUIDE.md) |
-| **Understanding architecture** | [Architecture](./architecture/README.md)                                                                  |
-| **Quick commands**             | [Cheatsheet](./CHEATSHEET.md)                                                                             |
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 
 ## Documentation Index
 
-### Overview
-
-| Document                                          | Description                                                       |
-| ------------------------------------------------- | ----------------------------------------------------------------- |
-| [System Documentation](./SYSTEM_DOCUMENTATION.md) | Complete system overview, architecture, and component details     |
-| [Architecture](./architecture/README.md)          | Monorepo architecture design and implementation plan (split docs) |
-| [Cheatsheet](./CHEATSHEET.md)                     | Quick reference commands and common operations                    |
-
-### Guides
-
-| Document                                           | Description                                          |
-| -------------------------------------------------- | ---------------------------------------------------- |
-| [Development Guide](./guides/DEVELOPMENT.md)       | Setting up development environment, coding standards |
-| [Hooks Development](./guides/HOOKS_DEVELOPMENT.md) | Creating and maintaining validation hooks            |
-| [System Guide](./guides/SYSTEM_GUIDE.md)           | Original system guide with operational details       |
-| [Batch Processing](./guides/BATCH_PROCESSING.md)   | Running batch validation for all managers            |
-
-### API
-
-| Document                                | Description                                  |
-| --------------------------------------- | -------------------------------------------- |
-| [API Reference](./api/API_REFERENCE.md) | REST API endpoints, request/response formats |
-
-### Reference
-
-| Document                                                        | Description                                       |
-| --------------------------------------------------------------- | ------------------------------------------------- |
-| [Legacy Files Reference](./reference/LEGACY_FILES_REFERENCE.md) | Reference to original working files for debugging |
+| Document                                         | Description              |
+| ------------------------------------------------ | ------------------------ |
+| [System Guide](./guides/SYSTEM_GUIDE.md)         | System operations guide  |
+| [Batch Processing](./guides/BATCH_PROCESSING.md) | Running batch validation |
+| [Cheatsheet](./CHEATSHEET.md)                    | Quick reference commands |
 
 ---
 
-## Quick Links
+## API Endpoints
 
-### Getting Started
-
-1. [Prerequisites](./guides/DEVELOPMENT.md#prerequisites)
-2. [Initial Setup](./guides/DEVELOPMENT.md#initial-setup)
-3. [Running the Application](./guides/DEVELOPMENT.md#running-the-application)
-
-### Creating Hooks
-
-1. [Hook Architecture](./guides/HOOKS_DEVELOPMENT.md#hook-architecture)
-2. [BaseHook Class](./guides/HOOKS_DEVELOPMENT.md#basehook-class)
-3. [Creating a Check](./guides/HOOKS_DEVELOPMENT.md#creating-a-check)
-4. [Configuration](./guides/HOOKS_DEVELOPMENT.md#configuration)
-
-### API Usage
-
-1. [Health Endpoints](./api/API_REFERENCE.md#health)
-2. [Hooks Endpoints](./api/API_REFERENCE.md#hooks)
-3. [Jobs Endpoints](./api/API_REFERENCE.md#jobs)
-4. [Managers Endpoints](./api/API_REFERENCE.md#managers)
+| Endpoint                      | Method | Description                   |
+| ----------------------------- | ------ | ----------------------------- |
+| `/`                           | GET    | Health check                  |
+| `/api/managers`               | GET    | List fund managers            |
+| `/api/process-report`         | POST   | Hook 2 - Special Transactions |
+| `/api/process-monthly-report` | POST   | Hook 1 - Monthly Report       |
+| `/api/job/{job_id}`           | GET    | Get job status                |
+| `/api/download/{filename}`    | GET    | Download generated report     |
 
 ---
 
 ## Hooks Overview
 
-| Hook                 | Status          | Description                      | Docs                                                                          |
-| -------------------- | --------------- | -------------------------------- | ----------------------------------------------------------------------------- |
-| Monthly Report       | **Active**      | Monthly fund holdings validation | [Details](./SYSTEM_DOCUMENTATION.md#3-hook-1-monthly-report-validation)       |
-| Special Transactions | **Development** | Coordinated trades validation    | [Details](./SYSTEM_DOCUMENTATION.md#4-hook-2-special-transactions-validation) |
-| Financial Report     | Specification   | Q1 2026 planned                  | -                                                                             |
+| Hook                 | Event ID | Status     | Description                      |
+| -------------------- | -------- | ---------- | -------------------------------- |
+| Monthly Report       | 5615     | **Active** | Monthly fund holdings validation |
+| Special Transactions | 5618     | **Active** | Coordinated trades validation    |
 
 ---
 
@@ -128,36 +82,58 @@ Quick lookup: **Which docs cover which code areas?**
 ## Project Structure
 
 ```
-docs/
-├── README.md                    # This file (Documentation Register)
-├── SYSTEM_DOCUMENTATION.md      # Complete system overview
-├── ARCHITECTURE.md              # Architecture index (redirects to architecture/)
-├── CHEATSHEET.md                # Quick reference
+mizrahi-compliance-platform/
+├── frontend/                   # React frontend
+│   ├── src/
+│   └── package.json
 │
-├── architecture/                # Detailed architecture docs
-│   ├── README.md                # Architecture index
-│   ├── OVERVIEW.md              # Goals, requirements
-│   ├── SYSTEM_DESIGN.md         # High-level design
-│   ├── HOOK_SYSTEM.md           # Hook plugin system
-│   ├── CONFIGURATION.md         # YAML config format
-│   ├── API_DESIGN.md            # API design
-│   ├── DEPLOYMENT.md            # Hosting, Docker
-│   ├── ADDITIONAL_REQUIREMENTS.md  # Jobs, SSE, notifications
-│   ├── MIGRATION_PLAN.md        # Migration phases
-│   └── TECHNICAL_DECISIONS.md   # Tech choices
+├── deploy/
+│   └── digitalocean/          # Main deployment code
+│       ├── server.py          # Unified FastAPI server
+│       ├── scripts/           # Hook processors
+│       └── README.md
 │
-├── guides/
-│   ├── DEVELOPMENT.md           # Development setup
-│   ├── HOOKS_DEVELOPMENT.md     # Hooks guide
-│   ├── SYSTEM_GUIDE.md          # Operations guide
-│   └── BATCH_PROCESSING.md      # Batch processing
+├── config/
+│   ├── hooks.yaml            # Hook definitions
+│   └── managers.yaml         # Fund manager mappings
 │
-├── api/
-│   └── API_REFERENCE.md         # API documentation
+├── docs/
+│   ├── README.md             # This file
+│   ├── CHEATSHEET.md         # Quick commands
+│   └── guides/               # Operation guides
 │
-└── reference/
-    └── LEGACY_FILES_REFERENCE.md # Original file references
+└── .claude/                   # Claude Code configuration
 ```
+
+---
+
+## Configuration
+
+### hooks.yaml
+
+Defines hook parameters, checks, and schedules:
+
+- Maya TASE Event IDs (5615 for Hook 1, 5618 for Hook 2)
+- Validation thresholds
+- Check configurations
+
+### managers.yaml
+
+Defines fund managers and Apify settings:
+
+- Manager IDs and Hebrew/English names
+- Apify actor IDs
+- Trustee name
+
+---
+
+## Environment Variables
+
+| Variable          | Required | Description              |
+| ----------------- | -------- | ------------------------ |
+| `APIFY_API_TOKEN` | Yes      | Apify API token          |
+| `RESEND_API_KEY`  | No       | Resend API key for email |
+| `OUTPUT_DIR`      | No       | Output directory         |
 
 ---
 
@@ -165,7 +141,6 @@ docs/
 
 - **GitHub Repository**: https://github.com/idan82labs/Mizrahi-Platfrom
 - **Production API**: https://209.38.226.220.nip.io
-- **n8n Workflows**: https://n8n.82labs.io
 
 ---
 

@@ -1,0 +1,18 @@
+# Credentials (never commit!)
+config/credentials.env
+
+# Output files
+output/
+logs/
+
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary files
+*.tmp
+temp/

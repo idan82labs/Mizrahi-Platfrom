@@ -1,0 +1,20 @@
+[
+  {
+    "manager_name": "מיטב",
+    "report_month": "דצמבר 2025",
+    "decision_1_transactions": null,
+    "decision_2_transactions": [
+      {
+        "fund_number": 5126065,
+        "fund_name": "מיטב 40/60",
+        "security_name": "איסתא נכסים אגח א",
+        "security_number": "1232867",
+        "quantity": 1484000.0,
+        "price": 99.4946,
+        "date": "03-12-2025",
+        "type": 31,
+        "decision_method": 2
+      }
+    ]
+  }
+]

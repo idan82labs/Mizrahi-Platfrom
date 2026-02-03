@@ -1,17 +1,19 @@
-# Hook Definitions and Schedules
-# This file defines all validation hooks, their parameters, and schedules
+# Hook Definitions for Legacy Digital Ocean Hosting
+# Used by deploy/digitalocean/server.py
 
 version: "1.0"
 
 defaults:
   timezone: "Asia/Jerusalem"
+  trustee_name: "מזרחי טפחות"
   email:
-    from: "notifications@82labs.io"
+    from: "noreply@notifications.82labs.io"
     provider: "resend"
 
 hooks:
   # ============================================
   # Hook #1: Monthly Report Validation
+  # Maya Event ID: 5615
   # ============================================
   monthly_report:
     id: "monthly_report"
@@ -19,6 +21,9 @@ hooks:
     name_he: "בקרה אוטומטית על דוח חודשי"
     description: "Validates monthly fund holdings reports against Magna list"
     status: "active"
+
+    # Maya TASE event ID for downloading reports
+    event_id: 5615
 
     schedule:
       enabled: true
@@ -98,8 +103,6 @@ hooks:
       enabled: true
       template: "monthly_report"
       recipients_from_input: true
-      cc:
-        - "elay.g@82labs.io"
 
     output:
       format: "xlsx"
@@ -107,17 +110,21 @@ hooks:
 
   # ============================================
   # Hook #2: Special Transactions Validation
+  # Maya Event ID: 5618
   # ============================================
   special_transactions:
     id: "special_transactions"
     name: "Special Transactions Validation"
     name_he: "בקרה אוטומטית על דוח עסקאות מתואמות ועסקאות מחוץ לבורסה"
     description: "Validates coordinated/off-exchange trades"
-    status: "development"
+    status: "active"
+
+    # Maya TASE event ID for downloading reports
+    event_id: 5618
 
     schedule:
-      enabled: false  # Manual trigger only
-      cron: "0 10 5 * *"  # Planned: 5th at 10:00
+      enabled: false  # Manual trigger via API
+      cron: "0 10 5 * *"
       timezone: "Asia/Jerusalem"
 
     parameters:
@@ -127,7 +134,7 @@ hooks:
       # Number of random samples for manual verification
       sample_size: 5
 
-      # Skip TASE price scraping (slow, requires Selenium)
+      # Skip TASE price scraping (slow)
       skip_tase_prices: true
 
       # Transaction types requiring decision method 1
@@ -144,12 +151,9 @@ hooks:
         - 35
         - 36
 
-      # Event ID for special transactions report
-      event_id: 5618
-
     checks:
       - id: "chk1_duplicates"
-        name_he: "עסקאות כפולות"
+        name_he: "עסקאות בין קרנות"
         description: "Inter-fund transactions (buy/sell pairs)"
         enabled: true
 
@@ -159,8 +163,18 @@ hooks:
         enabled: true
 
       - id: "chk4_decision"
-        name_he: "שיטת ההחלטה"
+        name_he: "אופן החלטה"
         description: "Decision method and דחצ voting rules"
+        enabled: true
+
+      - id: "chk4g_dachatz"
+        name_he: "דחצ הצבעה 1"
+        description: "דח״צ vote required when decision=1"
+        enabled: true
+
+      - id: "chk4d_dachatz"
+        name_he: "דחצ הצבעה 2"
+        description: "דח״צ vote=2 flag check"
         enabled: true
 
       - id: "chk5_sampling"
@@ -170,7 +184,7 @@ hooks:
 
       - id: "chk6_prices"
         name_he: "בדיקות מחיר"
-        description: "Cross-check with TASE market data"
+        description: "Price > 100 and internal price comparison"
         enabled: true
 
       - id: "chk7_problematic"
@@ -183,38 +197,16 @@ hooks:
       template: "special_transactions"
       recipients_from_input: true
       include_samples: true
-      cc:
-        - "elay.g@82labs.io"
 
     output:
       format: "xlsx"
       sheets:
         - "סיכום"
         - "סטטוס בדיקות"
-        - "עסקאות כפולות"
-        - "חריגות תאריך"
-        - "חריגות החלטה"
-        - "דגימות"
-        - "בדיקות מחיר"
-        - "ניירות בעייתיים"
+        - "בדיקה #1"
+        - "בדיקה #3"
+        - "בדיקה #4"
+        - "בדיקה #5"
+        - "בדיקה #6"
+        - "בדיקה #7"
         - "מחוץ לטווח"
-
-  # ============================================
-  # Hook #3: Financial Report Validation (Future)
-  # ============================================
-  financial_report:
-    id: "financial_report"
-    name: "Financial Report Validation"
-    name_he: "בדיקת דוח כספי אוטומטית"
-    description: "Automated financial report validation"
-    status: "specification"
-    planned_release: "Q1 2026"
-
-    schedule:
-      enabled: false
-
-    parameters: {}
-    checks: []
-
-    email:
-      enabled: false
