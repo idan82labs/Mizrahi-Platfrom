@@ -1,23 +1,24 @@
 # Legacy Files Reference
 
-This document provides references to the original working files preserved in the repository.
-Use these files for debugging individual hook workflows and understanding the original implementation.
+This document provides references to the original working files preserved in the
+repository. Use these files for debugging individual hook workflows and
+understanding the original implementation.
 
 **Legacy Location**: `./legacy/` (in repository root)
 
-> **Note**: Legacy files were moved from external backup to the repository for portability.
-> All developers now have access to the same reference files.
+> **Note**: Legacy files were moved from external backup to the repository for
+> portability. All developers now have access to the same reference files.
 
 ---
 
 ## Quick Reference
 
-| New Location | Legacy File | Purpose |
-|--------------|-------------|---------|
-| `packages/hooks/src/mizrahi_hooks/monthly_report/` | `legacy/scripts/fund_automation_complete.py` | Hook #1 original implementation |
+| New Location                                             | Legacy File                                      | Purpose                         |
+| -------------------------------------------------------- | ------------------------------------------------ | ------------------------------- |
+| `packages/hooks/src/mizrahi_hooks/monthly_report/`       | `legacy/scripts/fund_automation_complete.py`     | Hook #1 original implementation |
 | `packages/hooks/src/mizrahi_hooks/special_transactions/` | `legacy/scripts/mizrahi_special_transactions.py` | Hook #2 original implementation |
-| `config/hooks.yaml` | Various hardcoded configs | Hook configuration |
-| `config/managers.yaml` | `FUND_MANAGERS` dict | Fund manager mapping |
+| `config/hooks.yaml`                                      | Various hardcoded configs                        | Hook configuration              |
+| `config/managers.yaml`                                   | `FUND_MANAGERS` dict                             | Fund manager mapping            |
 
 ---
 
@@ -32,12 +33,14 @@ Status: Production (Active)
 ```
 
 **Key Functions to Reference:**
+
 - Main validation logic
 - Excel report generation
 - Email formatting
 - Asset type checking rules
 
 **Run Standalone:**
+
 ```bash
 cd legacy/scripts
 python fund_automation_complete.py --help
@@ -54,14 +57,17 @@ Status: Development
 ```
 
 **Key Functions to Reference:**
+
 - `check_1_duplicates()` → `packages/hooks/.../checks/duplicates.py`
 - `check_3_date_validation()` → `packages/hooks/.../checks/dates.py`
 - `check_4_decision_method()` → `packages/hooks/.../checks/decision_method.py`
 - `check_5_sampling()` → `packages/hooks/.../checks/sampling.py`
 - `check_6_tase_prices()` → `packages/hooks/.../checks/prices.py`
-- `check_7_problematic_securities()` → `packages/hooks/.../checks/problematic_securities.py`
+- `check_7_problematic_securities()` →
+  `packages/hooks/.../checks/problematic_securities.py`
 
 **Run Standalone:**
+
 ```bash
 cd legacy/scripts
 
@@ -85,12 +91,14 @@ Status: Production
 ```
 
 **Run Batch for All Managers:**
+
 ```bash
 cd legacy/scripts
 ./run_batch_all.sh YOUR_APIFY_TOKEN [GMAIL_USER] [GMAIL_PASSWORD]
 ```
 
 **Run Single Manager Test:**
+
 ```bash
 ./run_batch_test.sh YOUR_APIFY_TOKEN
 ```
@@ -108,6 +116,7 @@ Form: /form/fund-form
 ```
 
 **Workflow Nodes:**
+
 1. Schedule Trigger (5th of month @ 09:00)
 2. Apify: Fetch Mutual Funds List
 3. Apify: Fetch Manager Reports
@@ -115,6 +124,7 @@ Form: /form/fund-form
 5. Gmail: Send report email
 
 **Import to n8n:**
+
 ```bash
 # Copy workflow JSON to n8n import
 cat "legacy/workflows/Funds Report Agent Processor.json" | pbcopy
@@ -132,6 +142,7 @@ Form: /form/mizrahi-special-transactions
 ```
 
 **Workflow Nodes:**
+
 1. Form Trigger (manual upload)
 2. Extract Form Data
 3. SSH: Create directories
@@ -151,6 +162,7 @@ File: legacy/scripts/send_batch_email.py
 ```
 
 **Usage:**
+
 ```bash
 python legacy/scripts/send_batch_email.py \
     --batch-dir "./batch_output/20260117_184128" \
@@ -255,11 +267,11 @@ diff -r ./debug_output ../output/
 
 ## Version Comparison
 
-| File | Lines | Notes |
-|------|-------|-------|
-| `mizrahi_special_transactions.py` | 2,469 | Has דחצ voting checks |
-| `batch_special_transactions.py` | 493 | Event ID 5618 (correct) |
-| `fund_automation_complete.py` | 984 | Complete implementation |
+| File                              | Lines | Notes                   |
+| --------------------------------- | ----- | ----------------------- |
+| `mizrahi_special_transactions.py` | 2,469 | Has דחצ voting checks   |
+| `batch_special_transactions.py`   | 493   | Event ID 5618 (correct) |
+| `fund_automation_complete.py`     | 984   | Complete implementation |
 
 ---
 
@@ -303,7 +315,7 @@ sudo journalctl -u mizrahi-api -f
 
 - [Legacy README](../../legacy/README.md) - Overview of legacy files
 - [System Documentation](../SYSTEM_DOCUMENTATION.md) - Complete system overview
-- [Architecture Plan](../ARCHITECTURE.md) - Monorepo architecture
+- [Architecture](../architecture/README.md) - Monorepo architecture
 - [System Guide](../guides/SYSTEM_GUIDE.md) - Original system guide
 - [Batch Processing](../guides/BATCH_PROCESSING.md) - Batch processing guide
 - [Cheatsheet](../CHEATSHEET.md) - Quick commands reference

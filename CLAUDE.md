@@ -1,10 +1,13 @@
 # Project: Mizrahi Compliance Platform
 
-Regulatory compliance validation platform for Israeli mutual funds managed by Mizrahi Tefachot trustee. Automates validation of monthly reports and special transactions against regulatory requirements.
+Regulatory compliance validation platform for Israeli mutual funds managed by
+Mizrahi Tefachot trustee. Automates validation of monthly reports and special
+transactions against regulatory requirements.
 
 ## Tech Stack
 
 ### Frontend (apps/web/)
+
 - React 18.3 + TypeScript 5.8
 - Vite 5.4 (build tool)
 - TailwindCSS 3.4 + shadcn/ui (Radix primitives)
@@ -13,6 +16,7 @@ Regulatory compliance validation platform for Israeli mutual funds managed by Mi
 - Recharts (visualizations)
 
 ### Backend (apps/api/)
+
 - Python 3.11+
 - FastAPI 0.109+
 - SQLModel + Alembic (database)
@@ -21,10 +25,12 @@ Regulatory compliance validation platform for Israeli mutual funds managed by Mi
 - uv (package manager)
 
 ### Packages
+
 - `packages/hooks/` - Validation hook implementations
 - `packages/shared/` - Shared utilities, models, config
 
 ### External Services
+
 - Apify - Web scraping (TASE Maya)
 - Resend - Email notifications
 - PostgreSQL (production) / SQLite (development)
@@ -62,25 +68,30 @@ mizrahi-compliance-platform/
 ## Commands
 
 ### Development
+
 - `pnpm dev` — Run all services (frontend + API)
 - `pnpm dev:web` — Frontend only (http://localhost:5173)
 - `pnpm dev:api` — API only (http://localhost:8000)
 
 ### Building
+
 - `pnpm build` — Build all packages
 - `pnpm build:web` — Build frontend only
 
 ### Testing
+
 - `pnpm test` — Run all tests
 - `pnpm test:py` — Run Python tests only
 - `cd apps/api && uv run pytest tests/path/to/test.py` — Run specific test
 
 ### Linting & Type Checking
+
 - `pnpm lint` — Lint all packages
 - `pnpm lint:py` — Python linting (ruff)
 - `pnpm typecheck` — TypeScript type checking
 
 ### Python Package Management
+
 - `cd apps/api && uv sync` — Install Python dependencies
 - `cd apps/api && uv add <package>` — Add new dependency
 - `cd apps/api && uv run <command>` — Run in virtual environment
@@ -88,24 +99,28 @@ mizrahi-compliance-platform/
 ## Code Conventions
 
 ### General
+
 - Use early returns over deep nesting
 - Functions do one thing - if name has "and", split it
 - No magic numbers - use named constants
 - Group imports: stdlib → external → internal → types
 
 ### TypeScript (Frontend)
+
 - Prefer named exports over default exports
 - Use `@/` path alias for imports from src/
 - Components in PascalCase, hooks use `use` prefix
 - Colocate tests: `Component.tsx` → `Component.test.tsx`
 
 ### Python (Backend)
+
 - Async functions for I/O operations
 - Type hints required on all function signatures
 - Pydantic models for all API request/response schemas
 - Use `ruff format` for formatting, `ruff check` for linting
 
 ### Hebrew Content
+
 - Hebrew names allowed in user-facing output (UI, reports, emails)
 - Internal code uses English identifiers
 - Database stores Hebrew with proper UTF-8 encoding
@@ -114,6 +129,7 @@ mizrahi-compliance-platform/
 ## Architecture Rules
 
 ### Hook System (Template Method Pattern)
+
 ```
 BaseHook.execute() orchestrates:
 1. validate_input() → Validate request
@@ -124,6 +140,7 @@ BaseHook.execute() orchestrates:
 ```
 
 ### API Response Format
+
 ```json
 {
   "data": {},
@@ -133,6 +150,7 @@ BaseHook.execute() orchestrates:
 ```
 
 ### Data Flow
+
 ```
 Frontend → API Router → Service → Hook → Check Functions
                                        ↓
@@ -146,6 +164,7 @@ Frontend → API Router → Service → Hook → Check Functions
 ## Git Workflow
 
 ### Branch Strategy
+
 - `main` — Production (protected, receives merges from dev only)
 - `dev` — Integration (protected, receives merges from feature branches)
 - `feature/<description>` — New functionality
@@ -156,12 +175,14 @@ Frontend → API Router → Service → Hook → Check Functions
 - `chore/<description>` — Build, deps, config
 
 ### Rules
+
 - NEVER commit directly to `main` or `dev`
 - Create feature branches from `dev`
 - Use conventional commits: `type(scope): description`
 - Squash commits before merge
 
 ### Branch Naming
+
 - Lowercase with hyphens: `feature/user-dashboard`
 - Max 50 characters for description
 - Optional ticket ID: `feature/TICKET-123-description`
@@ -169,17 +190,20 @@ Frontend → API Router → Service → Hook → Check Functions
 ## Testing Rules
 
 ### When to Run Full Suite
+
 - Major features affecting multiple modules
 - Major fixes that might affect other parts
 - Before merging to `dev`
 - Config file changes
 
 ### When to Run Targeted Tests
+
 - Minor features (single module)
 - Minor bug fixes
 - Documentation changes → No tests required
 
 ### Coverage Requirements
+
 - New code must have tests
 - All TypeScript errors must be fixed before commit
 - All linting warnings must be addressed
@@ -187,12 +211,14 @@ Frontend → API Router → Service → Hook → Check Functions
 ## Security
 
 ### Critical (Compliance Platform)
+
 - Never log fund data, transaction details, or PII
 - Never expose validation rules in error messages
 - All input validation happens server-side
 - Audit trail for all hook executions
 
 ### General
+
 - Never hardcode secrets — use environment variables
 - Never commit .env, credentials, or API keys
 - Parameterized queries only — no string concatenation
@@ -201,14 +227,17 @@ Frontend → API Router → Service → Hook → Check Functions
 ## Domain Context
 
 ### Fund Managers (10 configured)
+
 מגדל, איילון, קסם, סיגמא, פורסט, הראל, אנליסט, מיטב, איביאי, אלטשולר-שחם
 
 ### Validation Hooks
+
 1. **monthly_report** (Active) — Monthly fund holdings validation
 2. **special_transactions** (Development) — Special transactions validation
 3. **financial_report** (Planned) — Financial report validation
 
 ### Configuration Files
+
 - `config/hooks.yaml` — Hook definitions, checks, schedules
 - `config/managers.yaml` — Fund manager mappings
 - `config/environments/` — Environment-specific settings
@@ -216,6 +245,7 @@ Frontend → API Router → Service → Hook → Check Functions
 ## Legacy Reference
 
 Original implementations preserved in `legacy/` directory:
+
 - `legacy/scripts/` — Original Python scripts
 - `legacy/workflows/` — n8n workflow definitions
 - `legacy/docs/` — Original documentation
@@ -228,7 +258,8 @@ See @docs/reference/LEGACY_FILES_REFERENCE.md for details.
 See @docs/README.md for documentation index.
 
 Key documents:
-- @docs/ARCHITECTURE.md — System architecture
+
+- @docs/architecture/ — System architecture (split into focused documents)
 - @docs/guides/DEVELOPMENT.md — Development setup
 - @docs/guides/HOOKS_DEVELOPMENT.md — Creating hooks
 - @docs/api/API_REFERENCE.md — API endpoints

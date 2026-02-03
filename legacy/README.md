@@ -132,5 +132,5 @@ Now in: `config/hooks.yaml` under each hook's `parameters:`
 ## Related Documentation
 
 - [System Documentation](../docs/SYSTEM_DOCUMENTATION.md)
-- [Architecture](../docs/ARCHITECTURE.md)
+- [Architecture](../docs/architecture/README.md)
 - [Hooks Development](../docs/guides/HOOKS_DEVELOPMENT.md)

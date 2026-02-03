@@ -15,18 +15,18 @@ Ensures documentation stays in sync with code changes.
 
 Quick reference for which docs cover which areas:
 
-| Area | Documentation File | Update When |
-|------|-------------------|-------------|
-| **API Endpoints** | `docs/api/API_REFERENCE.md` | Adding/modifying API routes |
-| **Hook System** | `docs/guides/HOOKS_DEVELOPMENT.md` | Hook architecture changes |
-| **New Hooks** | `docs/SYSTEM_DOCUMENTATION.md` | Adding new hooks |
-| **Check Functions** | `docs/SYSTEM_DOCUMENTATION.md` | Adding new checks |
-| **Configuration** | `docs/guides/DEVELOPMENT.md` | Config file changes |
-| **Architecture** | `docs/ARCHITECTURE.md` | Major structural changes |
-| **Setup** | `docs/guides/DEVELOPMENT.md` | Setup/install changes |
-| **Commands** | `docs/CHEATSHEET.md` | New CLI commands |
-| **Batch Processing** | `docs/guides/BATCH_PROCESSING.md` | Batch workflow changes |
-| **Legacy Reference** | `docs/reference/LEGACY_FILES_REFERENCE.md` | Legacy file changes |
+| Area                 | Documentation File                         | Update When                 |
+| -------------------- | ------------------------------------------ | --------------------------- |
+| **API Endpoints**    | `docs/api/API_REFERENCE.md`                | Adding/modifying API routes |
+| **Hook System**      | `docs/guides/HOOKS_DEVELOPMENT.md`         | Hook architecture changes   |
+| **New Hooks**        | `docs/SYSTEM_DOCUMENTATION.md`             | Adding new hooks            |
+| **Check Functions**  | `docs/SYSTEM_DOCUMENTATION.md`             | Adding new checks           |
+| **Configuration**    | `docs/guides/DEVELOPMENT.md`               | Config file changes         |
+| **Architecture**     | `docs/architecture/`                       | Major structural changes    |
+| **Setup**            | `docs/guides/DEVELOPMENT.md`               | Setup/install changes       |
+| **Commands**         | `docs/CHEATSHEET.md`                       | New CLI commands            |
+| **Batch Processing** | `docs/guides/BATCH_PROCESSING.md`          | Batch workflow changes      |
+| **Legacy Reference** | `docs/reference/LEGACY_FILES_REFERENCE.md` | Legacy file changes         |
 
 ## Decision Flow
 
@@ -120,9 +120,20 @@ wc -l docs/**/*.md
 ```
 docs/
 ├── README.md                    # Doc index
-├── ARCHITECTURE.md              # System architecture
+├── ARCHITECTURE.md              # Architecture index (redirects to architecture/)
 ├── CHEATSHEET.md               # Quick commands
 ├── SYSTEM_DOCUMENTATION.md     # Complete system overview
+├── architecture/               # Detailed architecture docs
+│   ├── README.md               # Architecture index
+│   ├── OVERVIEW.md             # Goals, requirements
+│   ├── SYSTEM_DESIGN.md        # High-level design
+│   ├── HOOK_SYSTEM.md          # Hook plugin system
+│   ├── CONFIGURATION.md        # YAML config format
+│   ├── API_DESIGN.md           # API design
+│   ├── DEPLOYMENT.md           # Hosting, Docker
+│   ├── ADDITIONAL_REQUIREMENTS.md  # Jobs, SSE, notifications
+│   ├── MIGRATION_PLAN.md       # Migration phases
+│   └── TECHNICAL_DECISIONS.md  # Tech choices
 ├── api/
 │   └── API_REFERENCE.md        # API endpoints
 ├── guides/
