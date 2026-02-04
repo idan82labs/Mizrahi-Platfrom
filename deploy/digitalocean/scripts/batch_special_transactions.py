@@ -93,7 +93,9 @@ def apify_request(method, endpoint, token, json_data=None, params=None):
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
-        response = requests.request(method, url, headers=headers, json=json_data, params=params)
+        response = requests.request(
+            method, url, headers=headers, json=json_data, params=params
+        )
         response.raise_for_status()
         return response
     except requests.exceptions.RequestException as e:
@@ -145,7 +147,7 @@ def build_maya_special_transactions_url(fund_code):
         f"https://maya.tase.co.il/he/reports/funds?"
         f"fromDate={one_year_ago.strftime('%Y-%m-%d')}&toDate={today.strftime('%Y-%m-%d')}"
         f"&noMeetings=false&isSingle=false&isIntendToTaseMember=false"
-        f"&by=group&groupId=7&itemId={fund_code}&eventsIds%5B%5D=5618"
+        f"&by=group&groupId=7&itemId={fund_code}&eventsIds%5B%5D=5615"  # 5615 is Special Transactions
     )
 
 
@@ -169,7 +171,9 @@ def fetch_funds_list(token, output_dir):
         funds_list_path = output_dir / "Mutual_Funds_List.xlsx"
         funds_list_path.write_bytes(funds_list_bytes)
 
-        log_success(f"Saved Mutual Funds List: {funds_list_path} ({len(funds_list_bytes)} bytes)")
+        log_success(
+            f"Saved Mutual Funds List: {funds_list_path} ({len(funds_list_bytes)} bytes)"
+        )
         return funds_list_path
 
     except Exception as e:
@@ -179,25 +183,39 @@ def fetch_funds_list(token, output_dir):
 
 def fetch_manager_report(manager_name, fund_code, token, output_dir):
     """Fetch manager special transactions report from Apify"""
-    log(f"Fetching special transactions report for {manager_name} (code: {fund_code})...")
+    log(
+        f"Fetching special transactions report for {manager_name} (code: {fund_code})..."
+    )
 
     try:
         maya_url = build_maya_special_transactions_url(fund_code)
-        run_data = run_actor_and_wait(FUND_REPORTS_ACTOR_ID, token, {"url": maya_url}, timeout=300)
+        run_data = run_actor_and_wait(
+            FUND_REPORTS_ACTOR_ID, token, {"url": maya_url}, timeout=300
+        )
 
         # Try to get CSV from key-value store
         kv_store_id = run_data["defaultKeyValueStoreId"]
 
         # Try different possible keys
-        report_keys = ["report_latest_month.csv", "special_transactions.csv", "report.csv"]
+        report_keys = [
+            "report_latest_month.csv",
+            "special_transactions.csv",
+            "report.csv",
+        ]
 
         for key in report_keys:
             try:
-                resp = apify_request("GET", f"/key-value-stores/{kv_store_id}/records/{key}", token)
+                resp = apify_request(
+                    "GET", f"/key-value-stores/{kv_store_id}/records/{key}", token
+                )
                 if resp.status_code == 200:
-                    report_path = output_dir / f"{manager_name}_special_transactions.csv"
+                    report_path = (
+                        output_dir / f"{manager_name}_special_transactions.csv"
+                    )
                     report_path.write_bytes(resp.content)
-                    log_success(f"Saved report: {report_path} ({len(resp.content)} bytes)")
+                    log_success(
+                        f"Saved report: {report_path} ({len(resp.content)} bytes)"
+                    )
                     return report_path
             except:
                 continue
@@ -215,7 +233,9 @@ def fetch_manager_report(manager_name, fund_code, token, output_dir):
 # ============================================================================
 
 
-def process_manager(manager_name, manager_code, funds_list_path, token, args, output_base_dir):
+def process_manager(
+    manager_name, manager_code, funds_list_path, token, args, output_base_dir
+):
     """Process special transactions for a single manager"""
     log(f"\n{'=' * 60}")
     log(f"Processing manager: {manager_name}")
@@ -293,7 +313,11 @@ def process_manager(manager_name, manager_code, funds_list_path, token, args, ou
         else:
             log_error(f"Processing failed for {manager_name}")
             log_error(f"stderr: {result.stderr}")
-            return {"manager_name": manager_name, "status": "failed", "error": result.stderr}
+            return {
+                "manager_name": manager_name,
+                "status": "failed",
+                "error": result.stderr,
+            }
 
     except subprocess.TimeoutExpired:
         log_error(f"Processing timeout for {manager_name}")
@@ -333,7 +357,9 @@ def send_email_with_attachments(
             part.set_payload(f.read())
 
         encoders.encode_base64(part)
-        part.add_header("Content-Disposition", f"attachment; filename= {file_path.name}")
+        part.add_header(
+            "Content-Disposition", f"attachment; filename= {file_path.name}"
+        )
         msg.attach(part)
 
     log(f"Connecting to Gmail SMTP...")
@@ -345,7 +371,9 @@ def send_email_with_attachments(
         log_success(f"Email sent successfully!")
 
 
-def send_results_email(results, recipient, output_dir, gmail_user=None, gmail_password=None):
+def send_results_email(
+    results, recipient, output_dir, gmail_user=None, gmail_password=None
+):
     """Send consolidated email with all results"""
     log(f"\n{'=' * 60}")
     log(f"Preparing email to {recipient}")
@@ -401,7 +429,8 @@ SUCCESSFUL MANAGERS:
 
     json_summary_file = output_dir / "batch_summary.json"
     json_summary_file.write_text(
-        json.dumps(json_summary, ensure_ascii=False, indent=2, default=str), encoding="utf-8"
+        json.dumps(json_summary, ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
     )
     log_success(f"JSON summary saved to: {json_summary_file}")
 
@@ -416,9 +445,7 @@ SUCCESSFUL MANAGERS:
             if r.get("output_xlsx") and r["output_xlsx"].exists():
                 attachments.append(r["output_xlsx"])
 
-        subject = (
-            f"Mizrahi Special Transactions - Batch Results ({datetime.now().strftime('%Y-%m-%d')})"
-        )
+        subject = f"Mizrahi Special Transactions - Batch Results ({datetime.now().strftime('%Y-%m-%d')})"
 
         try:
             send_email_with_attachments(
@@ -470,10 +497,16 @@ def parse_args():
         default=DEFAULT_PRICE_THRESHOLD,
         help=f"Price variance threshold in percent (default: {DEFAULT_PRICE_THRESHOLD}%%)",
     )
-    parser.add_argument("--spec-file", type=Path, help="Optional specification table Excel file")
-    parser.add_argument("--seed", type=int, help="Optional RNG seed for reproducible sampling")
     parser.add_argument(
-        "--email", default=EMAIL_RECIPIENT, help=f"Email recipient (default: {EMAIL_RECIPIENT})"
+        "--spec-file", type=Path, help="Optional specification table Excel file"
+    )
+    parser.add_argument(
+        "--seed", type=int, help="Optional RNG seed for reproducible sampling"
+    )
+    parser.add_argument(
+        "--email",
+        default=EMAIL_RECIPIENT,
+        help=f"Email recipient (default: {EMAIL_RECIPIENT})",
     )
     parser.add_argument("--gmail-user", help="Gmail address for sending email")
     parser.add_argument("--gmail-password", help="Gmail App Password")
@@ -538,7 +571,12 @@ def main():
     results = []
     for manager_name, manager_code in managers_to_process.items():
         result = process_manager(
-            manager_name, manager_code, funds_list_path, args.apify_token, args, output_dir
+            manager_name,
+            manager_code,
+            funds_list_path,
+            args.apify_token,
+            args,
+            output_dir,
         )
         if result:
             results.append(result)

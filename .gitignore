@@ -86,6 +86,10 @@ uploads/
 *.bak
 *.tmp
 
+# Production server copies (source of truth reference)
+source_of_truth/
+Mizrahi-Automations/
+
 # Claude Code
 # Local overrides (developer-specific, not committed)
 CLAUDE.local.md
