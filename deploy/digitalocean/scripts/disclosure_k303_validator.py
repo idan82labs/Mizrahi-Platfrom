@@ -49,11 +49,11 @@ LOG_RUN_DIR: Optional[Path] = None
 
 # Loggers
 logger = logging.getLogger(__name__)
-logger_chk1a = logging.getLogger('CHK_1A')
-logger_chk1b = logging.getLogger('CHK_1B')
-logger_chk2a = logging.getLogger('CHK_2A')
-logger_chk2b = logging.getLogger('CHK_2B')
-logger_chk3 = logging.getLogger('CHK_3')
+logger_chk1a = logging.getLogger("CHK_1A")
+logger_chk1b = logging.getLogger("CHK_1B")
+logger_chk2a = logging.getLogger("CHK_2A")
+logger_chk2b = logging.getLogger("CHK_2B")
+logger_chk3 = logging.getLogger("CHK_3")
 
 
 def setup_logging(log_base_dir: Path = Path("log")) -> Path:
@@ -61,6 +61,7 @@ def setup_logging(log_base_dir: Path = Path("log")) -> Path:
     global LOG_RUN_DIR
 
     from datetime import datetime as datetime_module
+
     timestamp = datetime_module.now().strftime("%Y%m%d_%H%M%S")
     short_uuid = str(uuid.uuid4())[:8]
     run_id = f"{timestamp}_{short_uuid}"
@@ -70,13 +71,12 @@ def setup_logging(log_base_dir: Path = Path("log")) -> Path:
     LOG_RUN_DIR = run_dir
 
     log_format = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     detailed_format = logging.Formatter(
-        '%(asctime)s - %(levelname)s - [%(name)s] %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(levelname)s - [%(name)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     console_handler = logging.StreamHandler(sys.stdout)
@@ -85,7 +85,7 @@ def setup_logging(log_base_dir: Path = Path("log")) -> Path:
 
     logger.setLevel(logging.DEBUG)
     logger.addHandler(console_handler)
-    main_file_handler = logging.FileHandler(run_dir / "main.log", encoding='utf-8')
+    main_file_handler = logging.FileHandler(run_dir / "main.log", encoding="utf-8")
     main_file_handler.setLevel(logging.DEBUG)
     main_file_handler.setFormatter(log_format)
     logger.addHandler(main_file_handler)
@@ -100,7 +100,7 @@ def setup_logging(log_base_dir: Path = Path("log")) -> Path:
 
     for spec_logger, filename, description in spec_loggers:
         spec_logger.setLevel(logging.DEBUG)
-        file_handler = logging.FileHandler(run_dir / filename, encoding='utf-8')
+        file_handler = logging.FileHandler(run_dir / filename, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(detailed_format)
         spec_logger.addHandler(file_handler)
@@ -140,15 +140,17 @@ MF_COL_MANAGER = "שם מנהל"
 MF_COL_EXPOSURE_PROFILE = "פרופיל החשיפה"
 
 # Excel styling
-HEADER_FONT = Font(name='Calibri', bold=True, color="FFFFFF", size=11)
+HEADER_FONT = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
 HEADER_FILL = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
 PASS_FILL = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
 FAIL_FILL = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
 THIN_BORDER = Border(
-    left=Side(style='thin'), right=Side(style='thin'),
-    top=Side(style='thin'), bottom=Side(style='thin')
+    left=Side(style="thin"),
+    right=Side(style="thin"),
+    top=Side(style="thin"),
+    bottom=Side(style="thin"),
 )
-DEFAULT_FONT = Font(name='Calibri', size=11)
+DEFAULT_FONT = Font(name="Calibri", size=11)
 
 WRAP_HEADERS = {
     "שם קרן",
@@ -161,9 +163,18 @@ WRAP_HEADERS = {
 }
 
 HEBREW_MONTHS = {
-    1: "ינואר", 2: "פברואר", 3: "מרץ", 4: "אפריל",
-    5: "מאי", 6: "יוני", 7: "יולי", 8: "אוגוסט",
-    9: "ספטמבר", 10: "אוקטובר", 11: "נובמבר", 12: "דצמבר"
+    1: "ינואר",
+    2: "פברואר",
+    3: "מרץ",
+    4: "אפריל",
+    5: "מאי",
+    6: "יוני",
+    7: "יולי",
+    8: "אוגוסט",
+    9: "ספטמבר",
+    10: "אוקטובר",
+    11: "נובמבר",
+    12: "דצמבר",
 }
 
 # Exposure profile mapping - determines equity/FX exposure from profile code
@@ -171,23 +182,23 @@ HEBREW_MONTHS = {
 # First digit: max equity exposure (code 01)
 # Letter: max FX exposure (code 06)
 EQUITY_EXPOSURE_PROFILES = {
-    '0': 0,    # 0% equity
-    '1': 10,   # up to 10% equity
-    '2': 30,   # up to 30% equity
-    '3': 50,   # up to 50% equity
-    '4': 120,  # up to 120% equity
-    '5': 200,  # up to 200% equity
-    '6': None, # above 200% (unlimited)
+    "0": 0,  # 0% equity
+    "1": 10,  # up to 10% equity
+    "2": 30,  # up to 30% equity
+    "3": 50,  # up to 50% equity
+    "4": 120,  # up to 120% equity
+    "5": 200,  # up to 200% equity
+    "6": None,  # above 200% (unlimited)
 }
 
 FX_EXPOSURE_PROFILES = {
-    '0': 0,    # no FX exposure
-    'A': 10,   # up to 10% FX
-    'B': 30,   # up to 30% FX
-    'C': 50,   # up to 50% FX
-    'D': 120,  # up to 120% FX
-    'E': 200,  # up to 200% FX
-    'F': None, # above 200% (unlimited)
+    "0": 0,  # no FX exposure
+    "A": 10,  # up to 10% FX
+    "B": 30,  # up to 30% FX
+    "C": 50,  # up to 50% FX
+    "D": 120,  # up to 120% FX
+    "E": 200,  # up to 200% FX
+    "F": None,  # above 200% (unlimited)
 }
 
 
@@ -195,9 +206,11 @@ FX_EXPOSURE_PROFILES = {
 # Data structures
 # -----------------------------
 
+
 @dataclass
 class DisclosureRow:
     """A single row from the disclosure report."""
+
     row_num: int
     fund_no: Optional[int]
     fund_name: Optional[str]
@@ -224,6 +237,7 @@ class DisclosureRow:
 @dataclass
 class MutualFund:
     """A fund from the mutual funds list."""
+
     fund_id: int
     fund_name: str
     trustee_name: str
@@ -234,6 +248,7 @@ class MutualFund:
 @dataclass
 class ExceptionRow:
     """An exception found during validation."""
+
     check_id: str
     reason: str
     fund_no: Optional[int] = None
@@ -251,9 +266,8 @@ class ExceptionRow:
 
 # Regex pattern for illegal Excel XML characters
 import re
-_ILLEGAL_XML_CHARS_RE = re.compile(
-    '[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]'
-)
+
+_ILLEGAL_XML_CHARS_RE = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
 
 
 def _clean_excel_string(s: Optional[str]) -> Optional[str]:
@@ -261,7 +275,7 @@ def _clean_excel_string(s: Optional[str]) -> Optional[str]:
     if s is None:
         return None
     # Remove illegal XML characters
-    return _ILLEGAL_XML_CHARS_RE.sub('', s)
+    return _ILLEGAL_XML_CHARS_RE.sub("", s)
 
 
 def _norm_spaces(s: str) -> str:
@@ -326,31 +340,105 @@ def _fmt_date(d: Optional[dt.date]) -> str:
 # Data loaders
 # -----------------------------
 
+
 def load_mutual_funds_csv(path: Path) -> dict[int, MutualFund]:
     """Load mutual funds list from CSV, return dict keyed by fund ID."""
     funds: dict[int, MutualFund] = {}
 
-    with open(path, 'r', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        if reader.fieldnames:
-            reader.fieldnames = [h.strip() for h in reader.fieldnames]
+    # Try different encodings (Maya files may use various Hebrew encodings)
+    encodings_to_try = ["utf-8-sig", "utf-8", "cp1255", "iso-8859-8", "windows-1252"]
 
-        for row in reader:
-            fund_id = _to_int(row.get(MF_COL_FUND_ID))
-            if fund_id is None:
-                continue
+    for encoding in encodings_to_try:
+        try:
+            with open(path, "r", encoding=encoding) as f:
+                reader = csv.DictReader(f)
+                if reader.fieldnames:
+                    reader.fieldnames = [h.strip() for h in reader.fieldnames]
 
-            fund = MutualFund(
-                fund_id=fund_id,
-                fund_name=_to_str(row.get("שם קרן בעברית")) or "",
-                trustee_name=_to_str(row.get(MF_COL_TRUSTEE)) or "",
-                manager_name=_to_str(row.get(MF_COL_MANAGER)) or "",
-                exposure_profile=_to_str(row.get(MF_COL_EXPOSURE_PROFILE)),
+                for row in reader:
+                    fund_id = _to_int(row.get(MF_COL_FUND_ID))
+                    if fund_id is None:
+                        continue
+
+                    fund = MutualFund(
+                        fund_id=fund_id,
+                        fund_name=_to_str(row.get("שם קרן בעברית")) or "",
+                        trustee_name=_to_str(row.get(MF_COL_TRUSTEE)) or "",
+                        manager_name=_to_str(row.get(MF_COL_MANAGER)) or "",
+                        exposure_profile=_to_str(row.get(MF_COL_EXPOSURE_PROFILE)),
+                    )
+                    funds[fund_id] = fund
+
+            logger.info(
+                "Loaded %d funds from mutual funds list (encoding: %s)",
+                len(funds),
+                encoding,
             )
-            funds[fund_id] = fund
+            return funds
+        except UnicodeDecodeError:
+            funds = {}
+            continue
 
-    logger.info("Loaded %d funds from mutual funds list", len(funds))
+    raise ValueError(
+        f"Could not decode mutual funds file {path} with any supported encoding"
+    )
+
+
+def load_mutual_funds_xlsx(path: Path) -> dict[int, MutualFund]:
+    """Load mutual funds list from XLSX, return dict keyed by fund ID."""
+    funds: dict[int, MutualFund] = {}
+
+    wb = openpyxl.load_workbook(path, data_only=True)
+    ws = wb[wb.sheetnames[0]]
+
+    # Build header map from row 1
+    headers: dict[str, int] = {}
+    for col in range(1, ws.max_column + 1):
+        val = ws.cell(1, col).value
+        if val:
+            headers[str(val).strip()] = col
+
+    for row_num in range(2, ws.max_row + 1):
+
+        def get_val(col_name: str, col_idx_cache=headers):
+            col_idx = col_idx_cache.get(col_name)
+            if col_idx:
+                return ws.cell(row_num, col_idx).value
+            return None
+
+        fund_id = _to_int(get_val(MF_COL_FUND_ID))
+        if fund_id is None:
+            continue
+
+        fund = MutualFund(
+            fund_id=fund_id,
+            fund_name=_to_str(get_val("שם קרן בעברית")) or "",
+            trustee_name=_to_str(get_val(MF_COL_TRUSTEE)) or "",
+            manager_name=_to_str(get_val(MF_COL_MANAGER)) or "",
+            exposure_profile=_to_str(get_val(MF_COL_EXPOSURE_PROFILE)),
+        )
+        funds[fund_id] = fund
+
+    wb.close()
+    logger.info(
+        "Loaded %d funds from mutual funds list (XLSX): %s", len(funds), path.name
+    )
     return funds
+
+
+def load_mutual_funds(path: Path) -> dict[int, MutualFund]:
+    """Load mutual funds list - auto-detect format (CSV or XLSX)."""
+    # Check file magic bytes to detect actual format
+    with open(path, "rb") as f:
+        magic = f.read(4)
+
+    # PK is ZIP (XLSX) magic
+    if magic[:2] == b"PK":
+        logger.info("Detected XLSX format for mutual funds: %s", path.name)
+        return load_mutual_funds_xlsx(path)
+    else:
+        logger.info("Detected CSV format for mutual funds: %s", path.name)
+        return load_mutual_funds_csv(path)
 
 
 def load_disclosure_report_csv(path: Path) -> list[DisclosureRow]:
@@ -358,15 +446,17 @@ def load_disclosure_report_csv(path: Path) -> list[DisclosureRow]:
     rows: list[DisclosureRow] = []
 
     # Try different encodings
-    encodings_to_try = ['utf-8-sig', 'utf-8', 'cp1255', 'iso-8859-8', 'windows-1252']
+    encodings_to_try = ["utf-8-sig", "utf-8", "cp1255", "iso-8859-8", "windows-1252"]
 
     for encoding in encodings_to_try:
         try:
-            with open(path, 'r', encoding=encoding) as f:
+            with open(path, "r", encoding=encoding) as f:
                 reader = csv.DictReader(f)
                 if reader.fieldnames:
                     # Strip whitespace and \r from header names
-                    reader.fieldnames = [h.strip().replace('\r', '') for h in reader.fieldnames]
+                    reader.fieldnames = [
+                        h.strip().replace("\r", "") for h in reader.fieldnames
+                    ]
 
                 for row_num, csv_row in enumerate(reader, start=2):
                     row = DisclosureRow(
@@ -385,7 +475,12 @@ def load_disclosure_report_csv(path: Path) -> list[DisclosureRow]:
                         manager_no=_to_str(csv_row.get(D_COL_MANAGER_NO)),
                     )
                     rows.append(row)
-            logger.info("Loaded %d rows from disclosure report (encoding: %s): %s", len(rows), encoding, path.name)
+            logger.info(
+                "Loaded %d rows from disclosure report (encoding: %s): %s",
+                len(rows),
+                encoding,
+                path.name,
+            )
             return rows
         except UnicodeDecodeError:
             rows = []
@@ -402,8 +497,8 @@ def load_disclosure_report_xlsx(path: Path) -> list[DisclosureRow]:
     rows: list[DisclosureRow] = []
 
     # If file has wrong extension, copy to temp file with .xlsx
-    if path.suffix.lower() != '.xlsx':
-        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+    if path.suffix.lower() != ".xlsx":
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
             shutil.copy2(path, tmp.name)
             actual_path = Path(tmp.name)
     else:
@@ -418,9 +513,10 @@ def load_disclosure_report_xlsx(path: Path) -> list[DisclosureRow]:
         for col in range(1, ws.max_column + 1):
             val = ws.cell(1, col).value
             if val:
-                headers[str(val).strip().replace('\r', '')] = col
+                headers[str(val).strip().replace("\r", "")] = col
 
         for row_num in range(2, ws.max_row + 1):
+
             def get_val(col_name: str, col_idx_cache=headers):
                 col_idx = col_idx_cache.get(col_name)
                 if col_idx:
@@ -451,23 +547,26 @@ def load_disclosure_report_xlsx(path: Path) -> list[DisclosureRow]:
         # Clean up temp file if we created one
         if actual_path != path:
             import os
+
             try:
                 os.unlink(actual_path)
             except:
                 pass
 
-    logger.info("Loaded %d rows from disclosure report (XLSX): %s", len(rows), path.name)
+    logger.info(
+        "Loaded %d rows from disclosure report (XLSX): %s", len(rows), path.name
+    )
     return rows
 
 
 def load_disclosure_report(path: Path) -> list[DisclosureRow]:
     """Load disclosure report - auto-detect format (CSV or XLSX)."""
     # Check file magic bytes to detect actual format
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         magic = f.read(4)
 
     # PK is ZIP (XLSX) magic
-    if magic[:2] == b'PK':
+    if magic[:2] == b"PK":
         logger.info("Detected XLSX format for: %s", path.name)
         return load_disclosure_report_xlsx(path)
     else:
@@ -489,10 +588,11 @@ def get_trustee_fund_ids(funds: dict[int, MutualFund], trustee_name: str) -> set
 # Checks
 # -----------------------------
 
+
 def check_1a_fund_completeness(
     disclosure_rows: list[DisclosureRow],
     mizrahi_fund_ids: set[int],
-    all_funds: dict[int, MutualFund]
+    all_funds: dict[int, MutualFund],
 ) -> list[ExceptionRow]:
     """Check 1א: Validate fund completeness between mutual funds list and disclosure report."""
     logger_chk1a.info("Starting fund completeness check")
@@ -507,13 +607,19 @@ def check_1a_fund_completeness(
     for fund_id in sorted(missing_from_report):
         fund = all_funds.get(fund_id)
         fund_name = fund.fund_name if fund else ""
-        logger_chk1a.warning("Fund %d (%s) is in mutual funds list but missing from report", fund_id, fund_name)
-        exceptions.append(ExceptionRow(
-            check_id="1א",
-            reason="קרן חסרה בדוח",
-            fund_no=fund_id,
-            fund_name=fund_name,
-        ))
+        logger_chk1a.warning(
+            "Fund %d (%s) is in mutual funds list but missing from report",
+            fund_id,
+            fund_name,
+        )
+        exceptions.append(
+            ExceptionRow(
+                check_id="1א",
+                reason="קרן חסרה בדוח",
+                fund_no=fund_id,
+                fund_name=fund_name,
+            )
+        )
 
     # Funds in report but missing from mutual list (unexpected)
     extra_in_report = funds_in_report - mizrahi_fund_ids
@@ -527,22 +633,30 @@ def check_1a_fund_completeness(
                 if r.fund_no == fund_id:
                     fund_name = r.fund_name or ""
                     break
-            logger_chk1a.warning("Fund %d (%s) is in report but not in mutual funds list", fund_id, fund_name)
-            exceptions.append(ExceptionRow(
-                check_id="1א",
-                reason="קרן לא קיימת ברשימת קרנות",
-                fund_no=fund_id,
-                fund_name=fund_name,
-            ))
+            logger_chk1a.warning(
+                "Fund %d (%s) is in report but not in mutual funds list",
+                fund_id,
+                fund_name,
+            )
+            exceptions.append(
+                ExceptionRow(
+                    check_id="1א",
+                    reason="קרן לא קיימת ברשימת קרנות",
+                    fund_no=fund_id,
+                    fund_name=fund_name,
+                )
+            )
 
-    logger_chk1a.info("Fund completeness check completed: %d exceptions", len(exceptions))
+    logger_chk1a.info(
+        "Fund completeness check completed: %d exceptions", len(exceptions)
+    )
     return exceptions
 
 
 def check_1b_report_month_validity(
     disclosure_rows: list[DisclosureRow],
     expected_month: str,
-    mizrahi_fund_ids: set[int]
+    mizrahi_fund_ids: set[int],
 ) -> list[ExceptionRow]:
     """Check 1ב: Validate that report_date matches expected report month."""
     logger_chk1b.info("Starting date validity check for month: %s", expected_month)
@@ -559,31 +673,43 @@ def check_1b_report_month_validity(
             continue
 
         if row.report_date is None:
-            logger_chk1b.warning("Row %d: Missing report date for fund %d", row.row_num, row.fund_no)
-            exceptions.append(ExceptionRow(
-                check_id="1ב",
-                reason="תאריך דוח חסר",
-                fund_no=row.fund_no,
-                fund_name=row.fund_name,
-                effective_code=row.effective_code,
-                row_num=row.row_num,
-            ))
+            logger_chk1b.warning(
+                "Row %d: Missing report date for fund %d", row.row_num, row.fund_no
+            )
+            exceptions.append(
+                ExceptionRow(
+                    check_id="1ב",
+                    reason="תאריך דוח חסר",
+                    fund_no=row.fund_no,
+                    fund_name=row.fund_name,
+                    effective_code=row.effective_code,
+                    row_num=row.row_num,
+                )
+            )
             continue
 
-        if row.report_date.year != expected_year or row.report_date.month != expected_month_num:
+        if (
+            row.report_date.year != expected_year
+            or row.report_date.month != expected_month_num
+        ):
             logger_chk1b.warning(
                 "Row %d: Date mismatch for fund %d - expected %s, got %s",
-                row.row_num, row.fund_no, expected_month, row.report_date
+                row.row_num,
+                row.fund_no,
+                expected_month,
+                row.report_date,
             )
-            exceptions.append(ExceptionRow(
-                check_id="1ב",
-                reason=f"תאריך לא תואם (צפוי: {expected_month})",
-                fund_no=row.fund_no,
-                fund_name=row.fund_name,
-                effective_code=row.effective_code,
-                report_date=row.report_date,
-                row_num=row.row_num,
-            ))
+            exceptions.append(
+                ExceptionRow(
+                    check_id="1ב",
+                    reason=f"תאריך לא תואם (צפוי: {expected_month})",
+                    fund_no=row.fund_no,
+                    fund_name=row.fund_name,
+                    effective_code=row.effective_code,
+                    report_date=row.report_date,
+                    row_num=row.row_num,
+                )
+            )
 
     logger_chk1b.info("Date validity check completed: %d exceptions", len(exceptions))
     return exceptions
@@ -592,13 +718,15 @@ def check_1b_report_month_validity(
 def check_2a_prev_month_comparison(
     current_rows: list[DisclosureRow],
     prev_rows: list[DisclosureRow],
-    mizrahi_fund_ids: set[int]
+    mizrahi_fund_ids: set[int],
 ) -> list[ExceptionRow]:
     """Check 2א: Compare disclosure codes between current and previous month."""
     logger_chk2a.info("Starting previous month comparison check")
 
     # Build lookup: (fund_no, effective_code) -> percent
-    def build_lookup(rows: list[DisclosureRow], fund_ids: set[int]) -> dict[tuple[int, str], float]:
+    def build_lookup(
+        rows: list[DisclosureRow], fund_ids: set[int]
+    ) -> dict[tuple[int, str], float]:
         lookup: dict[tuple[int, str], float] = {}
         for row in rows:
             if row.fund_no not in fund_ids:
@@ -632,54 +760,70 @@ def check_2a_prev_month_comparison(
 
         if current_pct is None and prev_pct is not None:
             # Code removed
-            logger_chk2a.warning("Fund %d: Code %s removed (was %.2f%%)", fund_no, code, prev_pct)
-            exceptions.append(ExceptionRow(
-                check_id="2א",
-                reason=f"קוד נעלם (היה: {prev_pct:.2f}%)",
-                fund_no=fund_no,
-                fund_name=fund_names.get(fund_no),
-                effective_code=code,
-                percent_from_fund=None,
-                extra_info={"prev_pct": prev_pct},
-            ))
+            logger_chk2a.warning(
+                "Fund %d: Code %s removed (was %.2f%%)", fund_no, code, prev_pct
+            )
+            exceptions.append(
+                ExceptionRow(
+                    check_id="2א",
+                    reason=f"קוד נעלם (היה: {prev_pct:.2f}%)",
+                    fund_no=fund_no,
+                    fund_name=fund_names.get(fund_no),
+                    effective_code=code,
+                    percent_from_fund=None,
+                    extra_info={"prev_pct": prev_pct},
+                )
+            )
         elif current_pct is not None and prev_pct is None:
             # Code added
-            logger_chk2a.warning("Fund %d: Code %s added (now %.2f%%)", fund_no, code, current_pct)
-            exceptions.append(ExceptionRow(
-                check_id="2א",
-                reason=f"קוד חדש (כעת: {current_pct:.2f}%)",
-                fund_no=fund_no,
-                fund_name=fund_names.get(fund_no),
-                effective_code=code,
-                percent_from_fund=current_pct,
-                extra_info={"prev_pct": None},
-            ))
+            logger_chk2a.warning(
+                "Fund %d: Code %s added (now %.2f%%)", fund_no, code, current_pct
+            )
+            exceptions.append(
+                ExceptionRow(
+                    check_id="2א",
+                    reason=f"קוד חדש (כעת: {current_pct:.2f}%)",
+                    fund_no=fund_no,
+                    fund_name=fund_names.get(fund_no),
+                    effective_code=code,
+                    percent_from_fund=current_pct,
+                    extra_info={"prev_pct": None},
+                )
+            )
         elif current_pct is not None and prev_pct is not None:
             # Check delta
             delta = abs(current_pct - prev_pct)
             if delta > 10.0:
                 logger_chk2a.warning(
                     "Fund %d: Code %s changed by %.2f%% (%.2f%% -> %.2f%%)",
-                    fund_no, code, delta, prev_pct, current_pct
+                    fund_no,
+                    code,
+                    delta,
+                    prev_pct,
+                    current_pct,
                 )
-                exceptions.append(ExceptionRow(
-                    check_id="2א",
-                    reason=f"סטייה > 10% (שינוי: {delta:.2f}%)",
-                    fund_no=fund_no,
-                    fund_name=fund_names.get(fund_no),
-                    effective_code=code,
-                    percent_from_fund=current_pct,
-                    extra_info={"prev_pct": prev_pct, "delta": delta},
-                ))
+                exceptions.append(
+                    ExceptionRow(
+                        check_id="2א",
+                        reason=f"סטייה > 10% (שינוי: {delta:.2f}%)",
+                        fund_no=fund_no,
+                        fund_name=fund_names.get(fund_no),
+                        effective_code=code,
+                        percent_from_fund=current_pct,
+                        extra_info={"prev_pct": prev_pct, "delta": delta},
+                    )
+                )
 
-    logger_chk2a.info("Previous month comparison completed: %d exceptions", len(exceptions))
+    logger_chk2a.info(
+        "Previous month comparison completed: %d exceptions", len(exceptions)
+    )
     return exceptions
 
 
 def check_2b_exposure_profile(
     disclosure_rows: list[DisclosureRow],
     all_funds: dict[int, MutualFund],
-    mizrahi_fund_ids: set[int]
+    mizrahi_fund_ids: set[int],
 ) -> list[ExceptionRow]:
     """Check 2ב: Cross-check disclosure exposure codes against fund's exposure profile."""
     logger_chk2b.info("Starting exposure profile check")
@@ -709,7 +853,7 @@ def check_2b_exposure_profile(
 
         # Aggregate exposure by code prefix for this fund
         equity_total = 0.0  # code 01 - מניות
-        fx_total = 0.0      # code 06 - מט"ח
+        fx_total = 0.0  # code 06 - מט"ח
 
         for row in rows:
             code = row.effective_code
@@ -725,41 +869,52 @@ def check_2b_exposure_profile(
         if max_equity is not None and equity_total > max_equity:
             logger_chk2b.warning(
                 "Fund %d: Profile %s allows max %d%% equity but total is %.2f%%",
-                fund_no, profile, max_equity, equity_total
+                fund_no,
+                profile,
+                max_equity,
+                equity_total,
             )
-            exceptions.append(ExceptionRow(
-                check_id="2ב",
-                reason=f"פרופיל {profile} מתיר עד {max_equity}% מניות אך סה\"כ חשיפה = {equity_total:.2f}%",
-                fund_no=fund_no,
-                fund_name=rows[0].fund_name if rows else "",
-                effective_code="01",
-                percent_from_fund=equity_total,
-                row_num=None,
-            ))
+            exceptions.append(
+                ExceptionRow(
+                    check_id="2ב",
+                    reason=f'פרופיל {profile} מתיר עד {max_equity}% מניות אך סה"כ חשיפה = {equity_total:.2f}%',
+                    fund_no=fund_no,
+                    fund_name=rows[0].fund_name if rows else "",
+                    effective_code="01",
+                    percent_from_fund=equity_total,
+                    row_num=None,
+                )
+            )
 
         # Check FX exposure (code 06 - מט"ח) against profile limit
         if max_fx is not None and fx_total > max_fx:
             logger_chk2b.warning(
                 "Fund %d: Profile %s allows max %d%% FX but total is %.2f%%",
-                fund_no, profile, max_fx, fx_total
+                fund_no,
+                profile,
+                max_fx,
+                fx_total,
             )
-            exceptions.append(ExceptionRow(
-                check_id="2ב",
-                reason=f'פרופיל {profile} מתיר עד {max_fx}% מט"ח אך סה\"כ חשיפה = {fx_total:.2f}%',
-                fund_no=fund_no,
-                fund_name=rows[0].fund_name if rows else "",
-                effective_code="06",
-                percent_from_fund=fx_total,
-                row_num=None,
-            ))
+            exceptions.append(
+                ExceptionRow(
+                    check_id="2ב",
+                    reason=f'פרופיל {profile} מתיר עד {max_fx}% מט"ח אך סה"כ חשיפה = {fx_total:.2f}%',
+                    fund_no=fund_no,
+                    fund_name=rows[0].fund_name if rows else "",
+                    effective_code="06",
+                    percent_from_fund=fx_total,
+                    row_num=None,
+                )
+            )
 
-    logger_chk2b.info("Exposure profile check completed: %d exceptions", len(exceptions))
+    logger_chk2b.info(
+        "Exposure profile check completed: %d exceptions", len(exceptions)
+    )
     return exceptions
 
 
 def check_3_combinations(
-    disclosure_rows: list[DisclosureRow],
-    mizrahi_fund_ids: set[int]
+    disclosure_rows: list[DisclosureRow], mizrahi_fund_ids: set[int]
 ) -> dict[str, list[ExceptionRow]]:
     """Check 3א-3ח: Within-month code combinations and cross-checks."""
     logger_chk3.info("Starting within-month combinations check")
@@ -816,25 +971,35 @@ def check_3_combinations(
         # If 0102, 0302, or 0502 exists in TIER 2 -> 06 must exist in TIER 2
         # If 06 exists in TIER 2 -> at least one of 0102, 0302, 0502 must exist in TIER 2
         # NOTE: We check TIER 2 specifically because these codes have different meanings at deeper levels
-        fx_related = "0102" in tier2_codes or "0302" in tier2_codes or "0502" in tier2_codes
+        fx_related = (
+            "0102" in tier2_codes or "0302" in tier2_codes or "0502" in tier2_codes
+        )
         has_06 = any(c.startswith("06") for c in tier2_codes)
 
         if fx_related and not has_06:
-            logger_chk3.warning("Fund %d: Has FX-related codes but missing code 06", fund_no)
-            results["3א"].append(ExceptionRow(
-                check_id="3א",
-                reason='יש חשיפה למט"ח (0102/0302/0502) אך חסר קוד 06',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            logger_chk3.warning(
+                "Fund %d: Has FX-related codes but missing code 06", fund_no
+            )
+            results["3א"].append(
+                ExceptionRow(
+                    check_id="3א",
+                    reason='יש חשיפה למט"ח (0102/0302/0502) אך חסר קוד 06',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif has_06 and not fx_related:
-            logger_chk3.warning("Fund %d: Has code 06 but missing FX-related codes", fund_no)
-            results["3א"].append(ExceptionRow(
-                check_id="3א",
-                reason='יש קוד 06 אך חסרים קודי חשיפה למט"ח (0102/0302/0502)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            logger_chk3.warning(
+                "Fund %d: Has code 06 but missing FX-related codes", fund_no
+            )
+            results["3א"].append(
+                ExceptionRow(
+                    check_id="3א",
+                    reason='יש קוד 06 אך חסרים קודי חשיפה למט"ח (0102/0302/0502)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
         # Check 3ב - Bond Exposure
         # If 03 exists -> 07 and 08 must exist
@@ -850,138 +1015,173 @@ def check_3_combinations(
                 missing.append("07 (דירוגים)")
             if not has_08:
                 missing.append('08 (מח"מ)')
-            logger_chk3.warning("Fund %d: Has bonds (03) but missing %s", fund_no, ", ".join(missing))
-            results["3ב"].append(ExceptionRow(
-                check_id="3ב",
-                reason=f'יש אג"ח (03) אך חסר: {", ".join(missing)}',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            logger_chk3.warning(
+                "Fund %d: Has bonds (03) but missing %s", fund_no, ", ".join(missing)
+            )
+            results["3ב"].append(
+                ExceptionRow(
+                    check_id="3ב",
+                    reason=f'יש אג"ח (03) אך חסר: {", ".join(missing)}',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif (has_07 or has_08) and not has_03:
-            logger_chk3.warning("Fund %d: Has ratings/duration but missing bonds (03)", fund_no)
-            results["3ב"].append(ExceptionRow(
-                check_id="3ב",
-                reason='יש קוד 07/08 אך חסר קוד אג"ח (03)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            logger_chk3.warning(
+                "Fund %d: Has ratings/duration but missing bonds (03)", fund_no
+            )
+            results["3ב"].append(
+                ExceptionRow(
+                    check_id="3ב",
+                    reason='יש קוד 07/08 אך חסר קוד אג"ח (03)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
         # Check 3ג - Government Bonds (Shekel): 03010101 <-> 080201
         has_03010101 = "03010101" in codes
         has_080201 = "080201" in codes
         if has_03010101 and not has_080201:
-            results["3ג"].append(ExceptionRow(
-                check_id="3ג",
-                reason='יש אג"ח ממשלתי שקלי (03010101) אך חסר מח"מ (080201)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ג"].append(
+                ExceptionRow(
+                    check_id="3ג",
+                    reason='יש אג"ח ממשלתי שקלי (03010101) אך חסר מח"מ (080201)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif has_080201 and not has_03010101:
-            results["3ג"].append(ExceptionRow(
-                check_id="3ג",
-                reason='יש מח"מ ממשלתי שקלי (080201) אך חסר אג"ח (03010101)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ג"].append(
+                ExceptionRow(
+                    check_id="3ג",
+                    reason='יש מח"מ ממשלתי שקלי (080201) אך חסר אג"ח (03010101)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
         # Check 3ד - Government Bonds (Linked): 03010102 <-> 080202
         has_03010102 = "03010102" in codes
         has_080202 = "080202" in codes
         if has_03010102 and not has_080202:
-            results["3ד"].append(ExceptionRow(
-                check_id="3ד",
-                reason='יש אג"ח ממשלתי צמוד (03010102) אך חסר מח"מ (080202)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ד"].append(
+                ExceptionRow(
+                    check_id="3ד",
+                    reason='יש אג"ח ממשלתי צמוד (03010102) אך חסר מח"מ (080202)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif has_080202 and not has_03010102:
-            results["3ד"].append(ExceptionRow(
-                check_id="3ד",
-                reason='יש מח"מ ממשלתי צמוד (080202) אך חסר אג"ח (03010102)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ד"].append(
+                ExceptionRow(
+                    check_id="3ד",
+                    reason='יש מח"מ ממשלתי צמוד (080202) אך חסר אג"ח (03010102)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
         # Check 3ה - Government Bonds (Linked FX): 03010103 <-> 080203
         has_03010103 = "03010103" in codes
         has_080203 = "080203" in codes
         if has_03010103 and not has_080203:
-            results["3ה"].append(ExceptionRow(
-                check_id="3ה",
-                reason='יש אג"ח ממשלתי צמוד מט"ח (03010103) אך חסר מח"מ (080203)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ה"].append(
+                ExceptionRow(
+                    check_id="3ה",
+                    reason='יש אג"ח ממשלתי צמוד מט"ח (03010103) אך חסר מח"מ (080203)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif has_080203 and not has_03010103:
-            results["3ה"].append(ExceptionRow(
-                check_id="3ה",
-                reason='יש מח"מ ממשלתי צמוד מט"ח (080203) אך חסר אג"ח (03010103)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ה"].append(
+                ExceptionRow(
+                    check_id="3ה",
+                    reason='יש מח"מ ממשלתי צמוד מט"ח (080203) אך חסר אג"ח (03010103)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
         # Check 3ו - Corporate Bonds (Shekel): 03010202 or 03010203 <-> 080204
         has_corp_shekel = "03010202" in codes or "03010203" in codes
         has_080204 = "080204" in codes
         if has_corp_shekel and not has_080204:
-            results["3ו"].append(ExceptionRow(
-                check_id="3ו",
-                reason='יש אג"ח קונצרני שקלי (03010202/03010203) אך חסר מח"מ (080204)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ו"].append(
+                ExceptionRow(
+                    check_id="3ו",
+                    reason='יש אג"ח קונצרני שקלי (03010202/03010203) אך חסר מח"מ (080204)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif has_080204 and not has_corp_shekel:
-            results["3ו"].append(ExceptionRow(
-                check_id="3ו",
-                reason='יש מח"מ קונצרני שקלי (080204) אך חסר אג"ח (03010202/03010203)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ו"].append(
+                ExceptionRow(
+                    check_id="3ו",
+                    reason='יש מח"מ קונצרני שקלי (080204) אך חסר אג"ח (03010202/03010203)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
         # Check 3ז - Corporate Bonds (Linked): 03010201 <-> 080205
         has_03010201 = "03010201" in codes
         has_080205 = "080205" in codes
         if has_03010201 and not has_080205:
-            results["3ז"].append(ExceptionRow(
-                check_id="3ז",
-                reason='יש אג"ח קונצרני צמוד (03010201) אך חסר מח"מ (080205)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ז"].append(
+                ExceptionRow(
+                    check_id="3ז",
+                    reason='יש אג"ח קונצרני צמוד (03010201) אך חסר מח"מ (080205)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif has_080205 and not has_03010201:
-            results["3ז"].append(ExceptionRow(
-                check_id="3ז",
-                reason='יש מח"מ קונצרני צמוד (080205) אך חסר אג"ח (03010201)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ז"].append(
+                ExceptionRow(
+                    check_id="3ז",
+                    reason='יש מח"מ קונצרני צמוד (080205) אך חסר אג"ח (03010201)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
         # Check 3ח - Corporate Bonds (Linked FX): 03010204 <-> 080206
         has_03010204 = "03010204" in codes
         has_080206 = "080206" in codes
         if has_03010204 and not has_080206:
-            results["3ח"].append(ExceptionRow(
-                check_id="3ח",
-                reason='יש אג"ח קונצרני צמוד מט"ח (03010204) אך חסר מח"מ (080206)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ח"].append(
+                ExceptionRow(
+                    check_id="3ח",
+                    reason='יש אג"ח קונצרני צמוד מט"ח (03010204) אך חסר מח"מ (080206)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
         elif has_080206 and not has_03010204:
-            results["3ח"].append(ExceptionRow(
-                check_id="3ח",
-                reason='יש מח"מ קונצרני צמוד מט"ח (080206) אך חסר אג"ח (03010204)',
-                fund_no=fund_no,
-                fund_name=fund_name,
-            ))
+            results["3ח"].append(
+                ExceptionRow(
+                    check_id="3ח",
+                    reason='יש מח"מ קונצרני צמוד מט"ח (080206) אך חסר אג"ח (03010204)',
+                    fund_no=fund_no,
+                    fund_name=fund_name,
+                )
+            )
 
     total_exceptions = sum(len(v) for v in results.values())
-    logger_chk3.info("Combinations check completed: %d total exceptions", total_exceptions)
+    logger_chk3.info(
+        "Combinations check completed: %d total exceptions", total_exceptions
+    )
     return results
 
 
 # -----------------------------
 # Excel output helpers
 # -----------------------------
+
 
 def _rtl(ws) -> None:
     ws.sheet_view.rightToLeft = True
@@ -992,7 +1192,9 @@ def _style_header(ws, row: int = 1) -> None:
     for cell in ws[row]:
         cell.font = HEADER_FONT
         cell.fill = HEADER_FILL
-        cell.alignment = Alignment(horizontal='right', vertical='center', wrap_text=True)
+        cell.alignment = Alignment(
+            horizontal="right", vertical="center", wrap_text=True
+        )
         cell.border = THIN_BORDER
 
 
@@ -1001,14 +1203,20 @@ def _style_cells(ws, start_row: int = 2) -> None:
     wrap_cols: set[int] = set()
     for col_idx in range(1, ws.max_column + 1):
         header_cell = ws.cell(1, col_idx)
-        header_text = str(header_cell.value).strip() if header_cell.value is not None else ""
+        header_text = (
+            str(header_cell.value).strip() if header_cell.value is not None else ""
+        )
         if header_text in WRAP_HEADERS:
             wrap_cols.add(col_idx)
 
-    for row in ws.iter_rows(min_row=start_row, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
+    for row in ws.iter_rows(
+        min_row=start_row, max_row=ws.max_row, min_col=1, max_col=ws.max_column
+    ):
         for cell in row:
             wrap = cell.col_idx in wrap_cols
-            cell.alignment = Alignment(horizontal='right', vertical='top', wrap_text=wrap)
+            cell.alignment = Alignment(
+                horizontal="right", vertical="top", wrap_text=wrap
+            )
             cell.border = THIN_BORDER
 
 
@@ -1021,15 +1229,15 @@ def _calculate_text_width(text: str, is_bold: bool = False) -> float:
     for char in text:
         if char == " ":
             width += 0.5
-        elif '\u0590' <= char <= '\u05FF':
+        elif "\u0590" <= char <= "\u05ff":
             width += 1.05
-        elif char in '０１２３４５６７８９':
+        elif char in "０１２３４５６７８９":
             width += 2.0
         elif ord(char) > 0x4E00:
             width += 2.0
-        elif char in 'WMwm':
+        elif char in "WMwm":
             width += 1.2
-        elif char in 'il|!.,;:\'"':
+        elif char in "il|!.,;:'\"":
             width += 0.6
         else:
             width += 1.0
@@ -1040,7 +1248,9 @@ def _calculate_text_width(text: str, is_bold: bool = False) -> float:
     return width
 
 
-def _auto_fit_columns(ws, min_width: float = 8.0, max_width: float = 50.0, padding: float = 1.2) -> dict[str, float]:
+def _auto_fit_columns(
+    ws, min_width: float = 8.0, max_width: float = 50.0, padding: float = 1.2
+) -> dict[str, float]:
     """Auto-fit column widths based on content."""
     column_widths: dict[str, float] = {}
 
@@ -1056,9 +1266,9 @@ def _auto_fit_columns(ws, min_width: float = 8.0, max_width: float = 50.0, paddi
 
             cell_text = str(cell.value)
             is_bold = cell.font.bold if cell.font else False
-            is_header = (row_idx == 1)
+            is_header = row_idx == 1
 
-            lines = cell_text.split('\n')
+            lines = cell_text.split("\n")
             for line in lines:
                 line_width = _calculate_text_width(line, is_bold or is_header)
                 if line_width > max_width_found:
@@ -1073,7 +1283,14 @@ def _auto_fit_columns(ws, min_width: float = 8.0, max_width: float = 50.0, paddi
     return column_widths
 
 
-def _auto_fit_rows(ws, column_widths: dict[str, float] = None, line_height: float = 15.0, header_line_height: float = 18.0, min_height: float = 15.0, max_height: float = 120.0) -> None:
+def _auto_fit_rows(
+    ws,
+    column_widths: dict[str, float] = None,
+    line_height: float = 15.0,
+    header_line_height: float = 18.0,
+    min_height: float = 15.0,
+    max_height: float = 120.0,
+) -> None:
     """Auto-fit row heights based on content."""
     if column_widths is None:
         column_widths = {}
@@ -1084,7 +1301,7 @@ def _auto_fit_rows(ws, column_widths: dict[str, float] = None, line_height: floa
 
     for row_idx in range(1, ws.max_row + 1):
         max_lines_needed = 1
-        is_header = (row_idx == 1)
+        is_header = row_idx == 1
 
         for col_idx in range(1, ws.max_column + 1):
             cell = ws.cell(row_idx, col_idx)
@@ -1099,7 +1316,7 @@ def _auto_fit_rows(ws, column_widths: dict[str, float] = None, line_height: floa
 
             lines_in_cell = 0
 
-            for line in cell_text.split('\n'):
+            for line in cell_text.split("\n"):
                 if not line:
                     lines_in_cell += 1
                     continue
@@ -1132,14 +1349,14 @@ def _set_font_calibri(ws) -> None:
         for cell in row:
             if cell.font:
                 cell.font = Font(
-                    name='Calibri',
+                    name="Calibri",
                     bold=cell.font.bold,
                     italic=cell.font.italic,
                     color=cell.font.color,
-                    size=cell.font.size or 11
+                    size=cell.font.size or 11,
                 )
             else:
-                cell.font = Font(name='Calibri', size=11)
+                cell.font = Font(name="Calibri", size=11)
 
 
 def _header(ws, headers: list[str], row: int = 1) -> None:
@@ -1154,6 +1371,7 @@ def _header(ws, headers: list[str], row: int = 1) -> None:
 # -----------------------------
 # Excel output
 # -----------------------------
+
 
 def write_output_xlsx(
     output_path: Path,
@@ -1188,7 +1406,7 @@ def write_output_xlsx(
         ("מספר קרנות בדוח", summary.get("total_funds_in_report", "")),
         ("מספר קרנות בתחום (מזרחי)", summary.get("in_scope_funds", "")),
         ("מספר קרנות מחוץ לתחום", summary.get("out_of_scope_funds", "")),
-        ("סה\"כ שורות בדוח", summary.get("total_rows", "")),
+        ('סה"כ שורות בדוח', summary.get("total_rows", "")),
     ]
 
     rr = 2
@@ -1216,22 +1434,81 @@ def write_output_xlsx(
     count_3h = len(exceptions_3.get("3ח", []))
 
     check_statuses = [
-        ("בדיקה #1א - שלמות קרנות", "הצלבה בין רשימת קרנות לדוח", len(exceptions_1a) == 0, len(exceptions_1a)),
-        ("בדיקה #1ב - תקינות תאריכים", "התאמת תאריך לחודש הדיווח", len(exceptions_1b) == 0, len(exceptions_1b)),
-        ("בדיקה #2א - סבירות מול דוח קודם", "השוואה לחודש קודם", len(exceptions_2a) == 0, len(exceptions_2a)),
-        ("בדיקה #2ב - סבירות מול מאפייני הקרן", "הצלבה מול פרופיל חשיפה", len(exceptions_2b) == 0, len(exceptions_2b)),
+        (
+            "בדיקה #1א - שלמות קרנות",
+            "הצלבה בין רשימת קרנות לדוח",
+            len(exceptions_1a) == 0,
+            len(exceptions_1a),
+        ),
+        (
+            "בדיקה #1ב - תקינות תאריכים",
+            "התאמת תאריך לחודש הדיווח",
+            len(exceptions_1b) == 0,
+            len(exceptions_1b),
+        ),
+        (
+            "בדיקה #2א - סבירות מול דוח קודם",
+            "השוואה לחודש קודם",
+            len(exceptions_2a) == 0,
+            len(exceptions_2a),
+        ),
+        (
+            "בדיקה #2ב - סבירות מול מאפייני הקרן",
+            "הצלבה מול פרופיל חשיפה",
+            len(exceptions_2b) == 0,
+            len(exceptions_2b),
+        ),
         ('בדיקה #3א - חשיפה למט"ח', 'הצלבת קודי חשיפה למט"ח', count_3a == 0, count_3a),
-        ('בדיקה #3ב - חשיפה לאג"ח', 'הצלבת קודי אג"ח/דירוגים/מח"מ', count_3b == 0, count_3b),
-        ('בדיקה #3ג - אג"ח ממשלתי שקלי', 'הצלבת 03010101 מול 080201', count_3c == 0, count_3c),
-        ('בדיקה #3ד - אג"ח ממשלתי צמוד', 'הצלבת 03010102 מול 080202', count_3d == 0, count_3d),
-        ('בדיקה #3ה - אג"ח ממשלתי צמוד מט"ח', 'הצלבת 03010103 מול 080203', count_3e == 0, count_3e),
-        ('בדיקה #3ו - אג"ח קונצרני שקלי', 'הצלבת 03010202/03010203 מול 080204', count_3f == 0, count_3f),
-        ('בדיקה #3ז - אג"ח קונצרני צמוד', 'הצלבת 03010201 מול 080205', count_3g == 0, count_3g),
-        ('בדיקה #3ח - אג"ח קונצרני צמוד מט"ח', 'הצלבת 03010204 מול 080206', count_3h == 0, count_3h),
+        (
+            'בדיקה #3ב - חשיפה לאג"ח',
+            'הצלבת קודי אג"ח/דירוגים/מח"מ',
+            count_3b == 0,
+            count_3b,
+        ),
+        (
+            'בדיקה #3ג - אג"ח ממשלתי שקלי',
+            "הצלבת 03010101 מול 080201",
+            count_3c == 0,
+            count_3c,
+        ),
+        (
+            'בדיקה #3ד - אג"ח ממשלתי צמוד',
+            "הצלבת 03010102 מול 080202",
+            count_3d == 0,
+            count_3d,
+        ),
+        (
+            'בדיקה #3ה - אג"ח ממשלתי צמוד מט"ח',
+            "הצלבת 03010103 מול 080203",
+            count_3e == 0,
+            count_3e,
+        ),
+        (
+            'בדיקה #3ו - אג"ח קונצרני שקלי',
+            "הצלבת 03010202/03010203 מול 080204",
+            count_3f == 0,
+            count_3f,
+        ),
+        (
+            'בדיקה #3ז - אג"ח קונצרני צמוד',
+            "הצלבת 03010201 מול 080205",
+            count_3g == 0,
+            count_3g,
+        ),
+        (
+            'בדיקה #3ח - אג"ח קונצרני צמוד מט"ח',
+            "הצלבת 03010204 מול 080206",
+            count_3h == 0,
+            count_3h,
+        ),
     ]
 
-    for row_idx, (name, description, passed, count) in enumerate(check_statuses, start=2):
-        ws_checks.append([name, description, "✓ תקין" if passed else "✗ חריגה", count, "", ""])
+    for row_idx, (name, description, passed, count) in enumerate(
+        check_statuses, start=2
+    ):
+        ws_checks.append(
+            [name, description, "✓ תקין" if passed else "✗ חריגה", count, "", ""]
+        )
         fill = PASS_FILL if passed else FAIL_FILL
         for col in range(1, 5):
             ws_checks.cell(row=row_idx, column=col).fill = fill
@@ -1242,7 +1519,9 @@ def write_output_xlsx(
     optional_sheets = []
 
     # Exception sheet helper
-    def create_exception_sheet(sheet_name: str, exceptions: list[ExceptionRow], extra_columns: list[str] = None):
+    def create_exception_sheet(
+        sheet_name: str, exceptions: list[ExceptionRow], extra_columns: list[str] = None
+    ):
         if not exceptions:
             return None
 
@@ -1262,7 +1541,7 @@ def write_output_xlsx(
                 _clean_excel_string(ex.check_id),
                 _clean_excel_string(ex.reason),
                 ex.fund_no,
-                _clean_excel_string(ex.fund_name)
+                _clean_excel_string(ex.fund_name),
             ]
             if extra_columns:
                 for col in extra_columns:
@@ -1287,12 +1566,19 @@ def write_output_xlsx(
     # Create exception sheets
     # Note: Excel sheet names must be <= 31 characters
     create_exception_sheet("בדיקה א1 - שלמות קרנות", exceptions_1a)
-    create_exception_sheet("בדיקה ב1 - תקינות תאריכים", exceptions_1b,
-                          ["קוד חשיפה", "תאריך דוח", "שורה בקובץ"])
-    create_exception_sheet("בדיקה א2 - סבירות דוח קודם", exceptions_2a,
-                          ["קוד חשיפה", "%מקרן", "% קודם", "הפרש"])
-    create_exception_sheet("בדיקה ב2 - מאפייני קרן", exceptions_2b,
-                          ["קוד חשיפה", "%מקרן", "שורה בקובץ"])
+    create_exception_sheet(
+        "בדיקה ב1 - תקינות תאריכים",
+        exceptions_1b,
+        ["קוד חשיפה", "תאריך דוח", "שורה בקובץ"],
+    )
+    create_exception_sheet(
+        "בדיקה א2 - סבירות דוח קודם",
+        exceptions_2a,
+        ["קוד חשיפה", "%מקרן", "% קודם", "הפרש"],
+    )
+    create_exception_sheet(
+        "בדיקה ב2 - מאפייני קרן", exceptions_2b, ["קוד חשיפה", "%מקרן", "שורה בקובץ"]
+    )
 
     # Create check 3 sheets
     # Note: Sheet names must be <= 31 chars and no invalid chars: " / \ [ ] : * ?
@@ -1320,11 +1606,13 @@ def write_output_xlsx(
         ws_spec = wb.create_sheet("פירוט בדיקות")
         _rtl(ws_spec)
 
-        with open(spec_file_path, 'r', encoding='utf-8-sig') as f:
+        with open(spec_file_path, "r", encoding="utf-8-sig") as f:
             reader = csv.reader(f)
             for row in reader:
                 # Clean each cell value to remove illegal XML characters
-                cleaned_row = [_clean_excel_string(cell) if cell else cell for cell in row]
+                cleaned_row = [
+                    _clean_excel_string(cell) if cell else cell for cell in row
+                ]
                 ws_spec.append(cleaned_row)
 
         _style_header(ws_spec, 1)
@@ -1349,6 +1637,7 @@ def write_output_xlsx(
 # CLI
 # -----------------------------
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Validate K.303 Disclosure Report (Migdal Variant)"
@@ -1357,55 +1646,52 @@ def main():
         "--mutual-funds-list",
         type=Path,
         required=True,
-        help="Path to Mutual Funds List CSV"
+        help="Path to Mutual Funds List CSV",
     )
     parser.add_argument(
         "--current-report",
         type=Path,
         required=True,
-        help="Path to current month disclosure report CSV"
+        help="Path to current month disclosure report CSV",
     )
     parser.add_argument(
         "--previous-report",
         type=Path,
         required=True,
-        help="Path to previous month disclosure report CSV"
+        help="Path to previous month disclosure report CSV",
     )
     parser.add_argument(
-        "--output-xlsx",
-        type=Path,
-        required=True,
-        help="Path for output Excel file"
+        "--output-xlsx", type=Path, required=True, help="Path for output Excel file"
     )
     parser.add_argument(
         "--email-json",
         type=Path,
         default=None,
-        help="Path to write email JSON payload for n8n workflow (not yet implemented)"
+        help="Path to write email JSON payload for n8n workflow (not yet implemented)",
     )
     parser.add_argument(
         "--report-month",
         type=str,
         required=True,
-        help="Report month in YYYY-MM format (e.g., 2025-12)"
+        help="Report month in YYYY-MM format (e.g., 2025-12)",
     )
     parser.add_argument(
         "--manager-name",
         type=str,
         default=None,
-        help="Fund manager name for report header (optional)"
+        help="Fund manager name for report header (optional)",
     )
     parser.add_argument(
         "--trustee-name",
         type=str,
         default=MIZRAHI_TRUSTEE_NAME,
-        help="Trustee name filter (default: Mizrahi)"
+        help="Trustee name filter (default: Mizrahi)",
     )
     parser.add_argument(
         "--spec-file",
         type=Path,
         default=None,
-        help="Path to K.303 checklist CSV (for פירוט בדיקות sheet)"
+        help="Path to K.303 checklist CSV (for פירוט בדיקות sheet)",
     )
 
     args = parser.parse_args()
@@ -1447,10 +1733,18 @@ def main():
     # Run checks
     logger.info("Running validation checks...")
 
-    exceptions_1a = check_1a_fund_completeness(current_rows, in_scope_fund_ids, all_funds)
-    exceptions_1b = check_1b_report_month_validity(current_rows, report_month, in_scope_fund_ids)
-    exceptions_2a = check_2a_prev_month_comparison(current_rows, prev_rows, in_scope_fund_ids)
-    exceptions_2b = check_2b_exposure_profile(current_rows, all_funds, in_scope_fund_ids)
+    exceptions_1a = check_1a_fund_completeness(
+        current_rows, in_scope_fund_ids, all_funds
+    )
+    exceptions_1b = check_1b_report_month_validity(
+        current_rows, report_month, in_scope_fund_ids
+    )
+    exceptions_2a = check_2a_prev_month_comparison(
+        current_rows, prev_rows, in_scope_fund_ids
+    )
+    exceptions_2b = check_2b_exposure_profile(
+        current_rows, all_funds, in_scope_fund_ids
+    )
     exceptions_3 = check_3_combinations(current_rows, in_scope_fund_ids)
 
     # Write output

@@ -5,7 +5,7 @@ Supports Hook 1, Hook 2, and Hook 5:
 
 Hook 1 (Monthly Report): Event ID 5618
 Hook 2 (Special Transactions): Event ID 5615
-Hook 5 (K.303 Disclosure): ISA Magna reports
+Hook 5 (K.303 Disclosure): Maya TASE reports
 """
 
 import asyncio
@@ -54,7 +54,7 @@ from scripts.fund_automation_complete import (
 
 # Import Hook 5 processor (K.303 Disclosure)
 from scripts.disclosure_k303_validator import (
-    load_mutual_funds_csv as load_k303_mutual_funds,
+    load_mutual_funds as load_k303_mutual_funds,
     load_disclosure_report,
     get_trustee_fund_ids,
     check_1a_fund_completeness,
@@ -74,7 +74,7 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN", "")
 APIFY_REPORT_SCRAPER_ACTOR = "5lhI6O39Qbgv9O0gs"  # Generic Maya report scraper
 APIFY_MAIN_FUNDS_ACTOR = "K9WppTziYC3n2vxTu"  # Maya main funds list scraper
-APIFY_K303_SCRAPER_ACTOR = "apify/puppeteer-scraper"  # ISA Magna K.303 scraper
+APIFY_K303_SCRAPER_ACTOR = "iTpNz9ixbdQCmH43C"  # Maya TASE K.303 scraper (custom actor)
 
 MUTUAL_FUNDS_LIST_PATH = Path(
     os.getenv("MUTUAL_FUNDS_LIST_PATH", "/opt/mizrahi/Mutual_Funds_List.xlsx")
@@ -167,29 +167,18 @@ def build_maya_url_hook2(item_id: str) -> str:
     )
 
 
-# K.303 ISA Magna search term mapping
-K303_MANAGER_SEARCH_TERMS = {
-    "מגדל": "מגדל קרנות נאמנות",
-    "איילון": "איילון קרנות נאמנות",
-    "הראל": "הראל קרנות נאמנות",
-    "אנליסט": "אנליסט קרנות נאמנות",
-    "קסם": "קסם קרנות נאמנות",
-    "מיטב": "מיטב קרנות נאמנות",
-    "סיגמא": "סיגמא קרנות נאמנות",
-    "פורסט": "פורסט קרנות נאמנות",
-    "איביאי": "איביאי קרנות נאמנות",
-    "אלטשולר-שחם": "אלטשולר שחם קרנות נאמנות",
-}
+def build_maya_url_hook5(item_id: str) -> str:
+    """Build Maya URL for Hook 5 - K.303 Disclosure Reports (formId=ק303)."""
+    today = datetime.now()
+    one_year_ago = today - timedelta(days=365)
 
-
-def build_magna_k303_url(manager_name: str) -> str:
-    """Build ISA Magna URL for K.303 disclosure reports."""
-    import urllib.parse
-
-    search_term = K303_MANAGER_SEARCH_TERMS.get(manager_name, manager_name)
-    encoded_term = urllib.parse.quote(search_term)
-    # ק303 URL-encoded is %D7%A7303
-    return f"https://www.magna.isa.gov.il/?form=%D7%A7303&q={encoded_term}"
+    # K.303 reports are under /reports/etfs with formId=%D7%A7303 (ק303 URL-encoded)
+    return (
+        f"https://maya.tase.co.il/he/reports/etfs?"
+        f"fromDate={one_year_ago.strftime('%Y-%m-%d')}&toDate={today.strftime('%Y-%m-%d')}"
+        f"&noMeetings=false&isPriority=false&isSingle=false&isIntendToTaseMember=false"
+        f"&by=group&formId=%D7%A7303&groupId=7&itemId={item_id}"
+    )
 
 
 # =======================
@@ -349,7 +338,14 @@ async def download_main_funds_list() -> bytes:
 
 async def run_k303_apify_scraper(manager_name: str) -> tuple[bytes, bytes]:
     """
-    Run Apify Puppeteer Scraper to download K.303 disclosure reports from ISA Magna.
+    Run custom Apify actor to download K.303 disclosure reports from Maya TASE.
+
+    Uses custom actor iTpNz9ixbdQCmH43C (Maya-K303-Reports-Downloader).
+    Same pattern as Hook 1/2 actors - just pass the Maya URL.
+
+    Output files in Key-Value Store:
+    - report_latest_month.csv (current month)
+    - report_previous_month.csv (previous month)
 
     Args:
         manager_name: Hebrew name of fund manager
@@ -357,79 +353,16 @@ async def run_k303_apify_scraper(manager_name: str) -> tuple[bytes, bytes]:
     Returns:
         (current_month_content, previous_month_content) as bytes
     """
-    if manager_name not in K303_MANAGER_SEARCH_TERMS:
-        raise ValueError(f"Unknown manager for K.303: {manager_name}")
+    if manager_name not in FUND_MANAGERS:
+        raise ValueError(f"Unknown manager: {manager_name}")
 
-    search_url = build_magna_k303_url(manager_name)
+    manager_config = FUND_MANAGERS[manager_name]
+    item_id = manager_config["item_id"]
 
-    # Puppeteer Scraper page function to download K.303 reports
-    page_function = """
-async function pageFunction(context) {
-    const { page, request, log, saveSnapshot, getValue, setValue, enqueueRequest } = context;
+    maya_url = build_maya_url_hook5(item_id)
 
-    log.info('Processing page: ' + request.url);
-
-    // Wait for the page to load
-    await page.waitForSelector('body', { timeout: 30000 });
-    await new Promise(r => setTimeout(r, 3000));
-
-    // Find all download links for K.303 reports
-    const downloadLinks = await page.evaluate(() => {
-        const links = [];
-        document.querySelectorAll('a[href*=".xlsx"], a[href*=".xls"], a[href*=".csv"]').forEach(link => {
-            links.push({
-                href: link.href,
-                text: link.textContent.trim()
-            });
-        });
-        return links;
-    });
-
-    log.info('Found ' + downloadLinks.length + ' download links');
-
-    // Download the files
-    const results = [];
-    for (const link of downloadLinks.slice(0, 2)) {  // Get current and previous month
-        try {
-            const response = await page.goto(link.href, { waitUntil: 'networkidle0' });
-            const buffer = await response.buffer();
-            const key = link.text.replace(/[^a-zA-Z0-9\\u0590-\\u05FF]/g, '_') + '.xlsx';
-            await setValue(key, buffer, { contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            results.push({ key, size: buffer.length, text: link.text });
-            log.info('Downloaded: ' + key);
-        } catch (e) {
-            log.error('Failed to download: ' + link.href + ' - ' + e.message);
-        }
-    }
-
-    return { status: 'success', downloads: results };
-}
-"""
-
-    actor_input = {
-        "startUrls": [{"url": search_url}],
-        "keepUrlFragments": False,
-        "useChrome": False,
-        "headless": True,
-        "ignoreSslErrors": False,
-        "ignoreCorsAndCsp": False,
-        "downloadMedia": True,
-        "downloadCss": False,
-        "maxConcurrency": 1,
-        "maxRequestRetries": 3,
-        "maxRequestsPerCrawl": 10,
-        "navigationTimeoutSecs": 60,
-        "pageLoadTimeoutSecs": 60,
-        "proxyConfiguration": {"useApifyProxy": True},
-        "preNavigationHooks": """
-async ({ page, request }) => {
-    await page.setExtraHTTPHeaders({
-        'Accept-Language': 'he-IL,he;q=0.9,en;q=0.8'
-    });
-}
-""",
-        "pageFunction": page_function,
-    }
+    # Simple input format - same as Hook 1/2 actors
+    actor_input = {"url": maya_url}
 
     async with httpx.AsyncClient(timeout=600.0) as client:
         headers = {"Authorization": f"Bearer {APIFY_API_TOKEN}"}
@@ -440,13 +373,13 @@ async ({ page, request }) => {
         )
 
         if response.status_code != 201:
-            raise Exception(f"Failed to start K.303 Puppeteer actor: {response.text}")
+            raise Exception(f"Failed to start K.303 actor: {response.text}")
 
         run_data = response.json()
         run_id = run_data["data"]["id"]
         status = run_data["data"]["status"]
 
-        # Poll for completion (longer timeout for Puppeteer)
+        # Poll for completion
         if status not in ["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"]:
             for _ in range(120):  # Up to 10 minutes
                 await asyncio.sleep(5)
@@ -459,46 +392,51 @@ async ({ page, request }) => {
                     break
 
         if status != "SUCCEEDED":
-            raise Exception(f"K.303 Puppeteer actor failed with status: {status}")
+            # Try to get error details from dataset
+            dataset_id = run_data["data"].get("defaultDatasetId")
+            error_msg = f"K.303 actor failed with status: {status}"
+
+            if dataset_id:
+                try:
+                    dataset_url = (
+                        f"https://api.apify.com/v2/datasets/{dataset_id}/items"
+                    )
+                    dataset_response = await client.get(dataset_url, headers=headers)
+                    if dataset_response.status_code == 200:
+                        items = dataset_response.json()
+                        if items and items[0].get("error"):
+                            error_detail = items[0].get("error", "")
+                            if "Timeout" in error_detail:
+                                error_msg = f"התקבלה שגיאת timeout בעת טעינת דוח ק.303 מאתר Maya."
+                            else:
+                                error_msg = (
+                                    f"שגיאה בהורדת דוח ק.303: {error_detail[:200]}"
+                                )
+                except Exception:
+                    pass
+
+            raise Exception(error_msg)
 
         # Get downloaded files from key-value store
+        # Actor outputs: report_latest_month.csv, report_previous_month.csv
         kv_store_id = run_data["data"]["defaultKeyValueStoreId"]
 
-        # List all keys in the store
-        list_url = f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/keys"
-        keys_response = await client.get(list_url, headers=headers)
-
-        if keys_response.status_code != 200:
-            raise Exception("Failed to list K.303 files from key-value store")
-
-        keys_data = keys_response.json()
-        keys = [
-            item["key"]
-            for item in keys_data.get("data", {}).get("items", [])
-            if item["key"].endswith((".xlsx", ".xls", ".csv"))
-        ]
-
-        if not keys:
-            raise Exception(f"No K.303 reports found for manager: {manager_name}")
-
-        # Download files (current and previous month)
+        # Download current month file (report_latest_month.csv)
         current_content = b""
+        latest_url = f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/records/report_latest_month.csv"
+        latest_response = await client.get(latest_url, headers=headers)
+
+        if latest_response.status_code != 200:
+            raise Exception(f"לא נמצא דוח ק.303 עבור מנהל הקרן {manager_name}.")
+
+        current_content = latest_response.content
+
+        # Download previous month file (report_previous_month.csv)
         previous_content = b""
-
-        for i, key in enumerate(keys[:2]):
-            file_url = (
-                f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/records/{key}"
-            )
-            file_response = await client.get(file_url, headers=headers)
-
-            if file_response.status_code == 200:
-                if i == 0:
-                    current_content = file_response.content
-                else:
-                    previous_content = file_response.content
-
-        if not current_content:
-            raise Exception(f"Failed to download K.303 report for: {manager_name}")
+        previous_url = f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/records/report_previous_month.csv"
+        previous_response = await client.get(previous_url, headers=headers)
+        if previous_response.status_code == 200:
+            previous_content = previous_response.content
 
         return current_content, previous_content
 
@@ -1049,10 +987,10 @@ async def run_hook5_job(
         job_status[job_id]["message"] = "מוריד רשימת קרנות מ-Maya..."
 
         main_funds_content = await download_main_funds_list()
-        main_funds_path = temp_dir / "main_funds_list.csv"
+        main_funds_path = temp_dir / "main_funds_list.xlsx"
         main_funds_path.write_bytes(main_funds_content)
 
-        job_status[job_id]["message"] = "מוריד דוחות גילוי נאות ק.303 מ-ISA Magna..."
+        job_status[job_id]["message"] = "מוריד דוחות גילוי נאות ק.303 מ-Maya TASE..."
 
         current_content, previous_content = await run_k303_apify_scraper(manager_name)
 
@@ -1128,7 +1066,7 @@ async def root():
         "hooks": {
             "hook1": "Monthly Report (event 5618)",
             "hook2": "Special Transactions (event 5615)",
-            "hook5": "K.303 Disclosure (ISA Magna)",
+            "hook5": "K.303 Disclosure (Maya TASE)",
         },
     }
 
@@ -1278,16 +1216,16 @@ async def process_disclosure_report_endpoint(
     report_month: str = Form(None),
 ):
     """
-    Process Hook 5 - K.303 Disclosure Report (auto-download from ISA Magna).
+    Process Hook 5 - K.303 Disclosure Report (auto-download from Maya TASE).
 
     - **manager_name**: Fund manager name (Hebrew)
     - **email**: Recipient email(s), semicolon-separated
     - **report_month**: Report month in YYYY-MM format (default: current month)
     """
-    if manager_name not in K303_MANAGER_SEARCH_TERMS:
+    if manager_name not in FUND_MANAGERS:
         raise HTTPException(
             status_code=400,
-            detail=f"מנהל קרן לא מוכר לדוח ק.303: {manager_name}. אפשרויות: {', '.join(K303_MANAGER_SEARCH_TERMS.keys())}",
+            detail=f"מנהל קרן לא מוכר: {manager_name}. אפשרויות: {', '.join(FUND_MANAGERS.keys())}",
         )
 
     emails = [e.strip() for e in email.replace(",", ";").split(";") if e.strip()]
