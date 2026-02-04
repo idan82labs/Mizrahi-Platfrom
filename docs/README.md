@@ -42,23 +42,25 @@ npm run dev
 
 ## API Endpoints
 
-| Endpoint                      | Method | Description                   |
-| ----------------------------- | ------ | ----------------------------- |
-| `/`                           | GET    | Health check                  |
-| `/api/managers`               | GET    | List fund managers            |
-| `/api/process-report`         | POST   | Hook 2 - Special Transactions |
-| `/api/process-monthly-report` | POST   | Hook 1 - Monthly Report       |
-| `/api/job/{job_id}`           | GET    | Get job status                |
-| `/api/download/{filename}`    | GET    | Download generated report     |
+| Endpoint                         | Method | Description                   |
+| -------------------------------- | ------ | ----------------------------- |
+| `/`                              | GET    | Health check                  |
+| `/api/managers`                  | GET    | List fund managers            |
+| `/api/process-report`            | POST   | Hook 2 - Special Transactions |
+| `/api/process-monthly-report`    | POST   | Hook 1 - Monthly Report       |
+| `/api/process-disclosure-report` | POST   | Hook 5 - K.303 Disclosure     |
+| `/api/job/{job_id}`              | GET    | Get job status                |
+| `/api/download/{filename}`       | GET    | Download generated report     |
 
 ---
 
 ## Hooks Overview
 
-| Hook                 | Event ID | Status     | Description                      |
-| -------------------- | -------- | ---------- | -------------------------------- |
-| Monthly Report       | 5615     | **Active** | Monthly fund holdings validation |
-| Special Transactions | 5618     | **Active** | Coordinated trades validation    |
+| Hook                 | Event ID  | Status     | Description                      |
+| -------------------- | --------- | ---------- | -------------------------------- |
+| Monthly Report       | 5618      | **Active** | Monthly fund holdings validation |
+| Special Transactions | 5615      | **Active** | Coordinated trades validation    |
+| K.303 Disclosure     | ISA Magna | **Active** | Disclosure report validation     |
 
 ---
 
@@ -113,7 +115,7 @@ mizrahi-compliance-platform/
 
 Defines hook parameters, checks, and schedules:
 
-- Maya TASE Event IDs (5615 for Hook 1, 5618 for Hook 2)
+- Maya TASE Event IDs (5618 for Hook 1, 5615 for Hook 2)
 - Validation thresholds
 - Check configurations
 

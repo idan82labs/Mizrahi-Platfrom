@@ -42,6 +42,7 @@ mizrahi-compliance-platform/
 │       ├── scripts/
 │       │   ├── mizrahi_special_transactions.py  # Hook 2 processor
 │       │   ├── fund_automation_complete.py      # Hook 1 processor
+│       │   ├── disclosure_k303_validator.py     # Hook 5 processor
 │       │   └── batch_*.py
 │       ├── test_data/         # Test data for validation
 │       ├── config/            # Local config
@@ -107,22 +108,29 @@ cd deploy/digitalocean
 
 # Test Hook 1 (requires Apify token)
 ./test_hook1.sh סיגמא
+
+# Test Hook 5 offline (K.303 disclosure, no Apify needed)
+./test_offline_hook5.sh מגדל 2025-11
+
+# Test Hook 5 via API (requires Apify token)
+./test_hook5.sh מגדל test@test.com
 ```
 
 ## API Endpoints
 
-| Endpoint                      | Method | Description                   |
-| ----------------------------- | ------ | ----------------------------- |
-| `/`                           | GET    | Health check                  |
-| `/api/managers`               | GET    | List fund managers            |
-| `/api/process-report`         | POST   | Hook 2 - Special Transactions |
-| `/api/process-monthly-report` | POST   | Hook 1 - Monthly Report       |
-| `/api/job/{job_id}`           | GET    | Get job status                |
-| `/api/download/{filename}`    | GET    | Download generated report     |
+| Endpoint                         | Method | Description                   |
+| -------------------------------- | ------ | ----------------------------- |
+| `/`                              | GET    | Health check                  |
+| `/api/managers`                  | GET    | List fund managers            |
+| `/api/process-report`            | POST   | Hook 2 - Special Transactions |
+| `/api/process-monthly-report`    | POST   | Hook 1 - Monthly Report       |
+| `/api/process-disclosure-report` | POST   | Hook 5 - K.303 Disclosure     |
+| `/api/job/{job_id}`              | GET    | Get job status                |
+| `/api/download/{filename}`       | GET    | Download generated report     |
 
 ## Hooks
 
-### Hook 1: Monthly Report Validation (Event ID: 5615)
+### Hook 1: Monthly Report Validation (Event ID: 5618)
 
 Validates monthly fund holdings reports against Magna list.
 
@@ -136,7 +144,7 @@ Validates monthly fund holdings reports against Magna list.
 6. Required Combinations - Asset type combinations (Clause 214)
 7. Price Reasonableness - Price ratio validation
 
-### Hook 2: Special Transactions Validation (Event ID: 5618)
+### Hook 2: Special Transactions Validation (Event ID: 5615)
 
 Validates coordinated and off-exchange trades.
 
@@ -149,6 +157,21 @@ Validates coordinated and off-exchange trades.
 5. Sampling - Random samples for verification
 6. Price Checks - Price > 100 and internal comparison
 7. Problematic Securities - Warning/halt/restricted lists
+
+### Hook 5: K.303 Disclosure Validation (ISA Magna)
+
+Validates K.303 disclosure reports from ISA Magna.
+
+**Checks:**
+
+1. Check 1א - Fund Completeness: Cross-reference Magna vs disclosure report
+2. Check 1ב - Date Validity: Report dates match expected month
+3. Check 2א - Previous Month Comparison: Detect significant changes (>10%)
+4. Check 2ב - Exposure Profile: Validate against fund's exposure profile
+5. Checks 3א-3ח - Code Combinations: Cross-reference disclosure codes
+   - 3א: FX exposure codes (0102/0302/0502 vs 06)
+   - 3ב: Bond exposure codes (03 vs 07/08)
+   - 3ג-3ח: Government/corporate bond code pairs
 
 ## Code Conventions
 
@@ -220,8 +243,12 @@ Validates coordinated and off-exchange trades.
 
 ### Maya TASE Event IDs
 
-- **5615** — Monthly Report (Hook 1)
-- **5618** — Special Transactions (Hook 2)
+- **5618** — Monthly Report (Hook 1)
+- **5615** — Special Transactions (Hook 2)
+
+### ISA Magna
+
+- **K.303** — Disclosure Reports (Hook 5) — from magna.isa.gov.il
 
 ### Configuration Files
 

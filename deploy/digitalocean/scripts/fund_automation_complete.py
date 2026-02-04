@@ -132,7 +132,7 @@ def run_actor_and_wait(actor_id, input_data=None, timeout=180):
 
 
 def build_maya_url(fund_code):
-    """Build Maya URL for fund reports (Hook 1 - Monthly Report, event ID 5615)"""
+    """Build Maya URL for fund reports (Hook 1 - Monthly Report, event ID 5618)"""
     today = datetime.now()
     one_year_ago = today - timedelta(days=365)
 
@@ -140,7 +140,7 @@ def build_maya_url(fund_code):
         f"https://maya.tase.co.il/he/reports/funds?"
         f"fromDate={one_year_ago.strftime('%Y-%m-%d')}&toDate={today.strftime('%Y-%m-%d')}"
         f"&noMeetings=false&isSingle=false&isIntendToTaseMember=false"
-        f"&by=group&groupId=7&itemId={fund_code}&eventsIds%5B%5D=5615"
+        f"&by=group&groupId=7&itemId={fund_code}&eventsIds%5B%5D=5618"
     )
 
 

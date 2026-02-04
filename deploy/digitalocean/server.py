@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Mizrahi Compliance Platform - Unified FastAPI Server v4
-Supports both Hook 1 (Monthly Report) and Hook 2 (Special Transactions)
+Mizrahi Compliance Platform - Unified FastAPI Server v5
+Supports Hook 1, Hook 2, and Hook 5:
 
-Hook 1 (Monthly Report): Event ID 5615
-Hook 2 (Special Transactions): Event ID 5618
+Hook 1 (Monthly Report): Event ID 5618
+Hook 2 (Special Transactions): Event ID 5615
+Hook 5 (K.303 Disclosure): ISA Magna reports
 """
 
 import asyncio
@@ -51,6 +52,20 @@ from scripts.fund_automation_complete import (
     TRUSTEE_NAME,
 )
 
+# Import Hook 5 processor (K.303 Disclosure)
+from scripts.disclosure_k303_validator import (
+    load_mutual_funds_csv as load_k303_mutual_funds,
+    load_disclosure_report,
+    get_trustee_fund_ids,
+    check_1a_fund_completeness,
+    check_1b_report_month_validity,
+    check_2a_prev_month_comparison,
+    check_2b_exposure_profile,
+    check_3_combinations,
+    write_output_xlsx as write_k303_output_xlsx,
+    MIZRAHI_TRUSTEE_NAME as K303_TRUSTEE_NAME,
+)
+
 # =======================
 # Configuration
 # =======================
@@ -59,12 +74,16 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN", "")
 APIFY_REPORT_SCRAPER_ACTOR = "5lhI6O39Qbgv9O0gs"  # Generic Maya report scraper
 APIFY_MAIN_FUNDS_ACTOR = "K9WppTziYC3n2vxTu"  # Maya main funds list scraper
+APIFY_K303_SCRAPER_ACTOR = "apify/puppeteer-scraper"  # ISA Magna K.303 scraper
 
 MUTUAL_FUNDS_LIST_PATH = Path(
     os.getenv("MUTUAL_FUNDS_LIST_PATH", "/opt/mizrahi/Mutual_Funds_List.xlsx")
 )
 SPEC_FILE_PATH = Path(
     os.getenv("SPEC_FILE_PATH", "/opt/mizrahi/Special_Transactions_Specifications.xlsx")
+)
+K303_SPEC_FILE_PATH = Path(
+    os.getenv("K303_SPEC_FILE_PATH", "/opt/mizrahi/K303_Specifications.csv")
 )
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "/tmp/mizrahi-outputs"))
 FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@notifications.82labs.io")
@@ -123,20 +142,7 @@ job_status: dict[str, dict] = {}
 
 
 def build_maya_url_hook1(item_id: str) -> str:
-    """Build Maya URL for Hook 1 - Monthly Report (eventsId=5615)."""
-    today = datetime.now()
-    one_year_ago = today - timedelta(days=365)
-
-    return (
-        f"https://maya.tase.co.il/he/reports/funds?"
-        f"fromDate={one_year_ago.strftime('%Y-%m-%d')}&toDate={today.strftime('%Y-%m-%d')}"
-        f"&noMeetings=false&isSingle=false&isIntendToTaseMember=false"
-        f"&by=group&groupId=7&itemId={item_id}&eventsIds%5B%5D=5615"
-    )
-
-
-def build_maya_url_hook2(item_id: str) -> str:
-    """Build Maya URL for Hook 2 - Special Transactions (eventsId=5618)."""
+    """Build Maya URL for Hook 1 - Monthly Report (eventsId=5618)."""
     today = datetime.now()
     one_year_ago = today - timedelta(days=365)
 
@@ -148,12 +154,52 @@ def build_maya_url_hook2(item_id: str) -> str:
     )
 
 
+def build_maya_url_hook2(item_id: str) -> str:
+    """Build Maya URL for Hook 2 - Special Transactions (eventsId=5615)."""
+    today = datetime.now()
+    one_year_ago = today - timedelta(days=365)
+
+    return (
+        f"https://maya.tase.co.il/he/reports/funds?"
+        f"fromDate={one_year_ago.strftime('%Y-%m-%d')}&toDate={today.strftime('%Y-%m-%d')}"
+        f"&noMeetings=false&isSingle=false&isIntendToTaseMember=false"
+        f"&by=group&groupId=7&itemId={item_id}&eventsIds%5B%5D=5615"
+    )
+
+
+# K.303 ISA Magna search term mapping
+K303_MANAGER_SEARCH_TERMS = {
+    "מגדל": "מגדל קרנות נאמנות",
+    "איילון": "איילון קרנות נאמנות",
+    "הראל": "הראל קרנות נאמנות",
+    "אנליסט": "אנליסט קרנות נאמנות",
+    "קסם": "קסם קרנות נאמנות",
+    "מיטב": "מיטב קרנות נאמנות",
+    "סיגמא": "סיגמא קרנות נאמנות",
+    "פורסט": "פורסט קרנות נאמנות",
+    "איביאי": "איביאי קרנות נאמנות",
+    "אלטשולר-שחם": "אלטשולר שחם קרנות נאמנות",
+}
+
+
+def build_magna_k303_url(manager_name: str) -> str:
+    """Build ISA Magna URL for K.303 disclosure reports."""
+    import urllib.parse
+
+    search_term = K303_MANAGER_SEARCH_TERMS.get(manager_name, manager_name)
+    encoded_term = urllib.parse.quote(search_term)
+    # ק303 URL-encoded is %D7%A7303
+    return f"https://www.magna.isa.gov.il/?form=%D7%A7303&q={encoded_term}"
+
+
 # =======================
 # Apify Integration
 # =======================
 
 
-async def run_apify_scraper(manager_name: str, hook_type: str) -> tuple[bytes, bytes, str]:
+async def run_apify_scraper(
+    manager_name: str, hook_type: str
+) -> tuple[bytes, bytes, str]:
     """
     Run Apify actor to download manager's report.
 
@@ -212,7 +258,9 @@ async def run_apify_scraper(manager_name: str, hook_type: str) -> tuple[bytes, b
 
             if dataset_id:
                 try:
-                    dataset_url = f"https://api.apify.com/v2/datasets/{dataset_id}/items"
+                    dataset_url = (
+                        f"https://api.apify.com/v2/datasets/{dataset_id}/items"
+                    )
                     dataset_response = await client.get(dataset_url, headers=headers)
                     if dataset_response.status_code == 200:
                         items = dataset_response.json()
@@ -259,7 +307,9 @@ async def download_main_funds_list() -> bytes:
         headers = {"Authorization": f"Bearer {APIFY_API_TOKEN}"}
 
         run_url = f"https://api.apify.com/v2/acts/{APIFY_MAIN_FUNDS_ACTOR}/runs"
-        response = await client.post(run_url, json={}, headers=headers, params={"timeout": 60})
+        response = await client.post(
+            run_url, json={}, headers=headers, params={"timeout": 60}
+        )
 
         if response.status_code != 201:
             raise Exception(f"Failed to start main funds actor: {response.text}")
@@ -283,14 +333,174 @@ async def download_main_funds_list() -> bytes:
             raise Exception(f"Main funds actor failed with status: {status}")
 
         kv_store_id = run_data["data"]["defaultKeyValueStoreId"]
-        file_url = f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/records/download"
+        file_url = (
+            f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/records/download"
+        )
 
         file_response = await client.get(file_url, headers=headers)
 
         if file_response.status_code != 200:
-            raise Exception(f"Failed to download main funds list: {file_response.status_code}")
+            raise Exception(
+                f"Failed to download main funds list: {file_response.status_code}"
+            )
 
         return file_response.content
+
+
+async def run_k303_apify_scraper(manager_name: str) -> tuple[bytes, bytes]:
+    """
+    Run Apify Puppeteer Scraper to download K.303 disclosure reports from ISA Magna.
+
+    Args:
+        manager_name: Hebrew name of fund manager
+
+    Returns:
+        (current_month_content, previous_month_content) as bytes
+    """
+    if manager_name not in K303_MANAGER_SEARCH_TERMS:
+        raise ValueError(f"Unknown manager for K.303: {manager_name}")
+
+    search_url = build_magna_k303_url(manager_name)
+
+    # Puppeteer Scraper page function to download K.303 reports
+    page_function = """
+async function pageFunction(context) {
+    const { page, request, log, saveSnapshot, getValue, setValue, enqueueRequest } = context;
+
+    log.info('Processing page: ' + request.url);
+
+    // Wait for the page to load
+    await page.waitForSelector('body', { timeout: 30000 });
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Find all download links for K.303 reports
+    const downloadLinks = await page.evaluate(() => {
+        const links = [];
+        document.querySelectorAll('a[href*=".xlsx"], a[href*=".xls"], a[href*=".csv"]').forEach(link => {
+            links.push({
+                href: link.href,
+                text: link.textContent.trim()
+            });
+        });
+        return links;
+    });
+
+    log.info('Found ' + downloadLinks.length + ' download links');
+
+    // Download the files
+    const results = [];
+    for (const link of downloadLinks.slice(0, 2)) {  // Get current and previous month
+        try {
+            const response = await page.goto(link.href, { waitUntil: 'networkidle0' });
+            const buffer = await response.buffer();
+            const key = link.text.replace(/[^a-zA-Z0-9\\u0590-\\u05FF]/g, '_') + '.xlsx';
+            await setValue(key, buffer, { contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            results.push({ key, size: buffer.length, text: link.text });
+            log.info('Downloaded: ' + key);
+        } catch (e) {
+            log.error('Failed to download: ' + link.href + ' - ' + e.message);
+        }
+    }
+
+    return { status: 'success', downloads: results };
+}
+"""
+
+    actor_input = {
+        "startUrls": [{"url": search_url}],
+        "keepUrlFragments": False,
+        "useChrome": False,
+        "headless": True,
+        "ignoreSslErrors": False,
+        "ignoreCorsAndCsp": False,
+        "downloadMedia": True,
+        "downloadCss": False,
+        "maxConcurrency": 1,
+        "maxRequestRetries": 3,
+        "maxRequestsPerCrawl": 10,
+        "navigationTimeoutSecs": 60,
+        "pageLoadTimeoutSecs": 60,
+        "proxyConfiguration": {"useApifyProxy": True},
+        "preNavigationHooks": """
+async ({ page, request }) => {
+    await page.setExtraHTTPHeaders({
+        'Accept-Language': 'he-IL,he;q=0.9,en;q=0.8'
+    });
+}
+""",
+        "pageFunction": page_function,
+    }
+
+    async with httpx.AsyncClient(timeout=600.0) as client:
+        headers = {"Authorization": f"Bearer {APIFY_API_TOKEN}"}
+
+        run_url = f"https://api.apify.com/v2/acts/{APIFY_K303_SCRAPER_ACTOR}/runs"
+        response = await client.post(
+            run_url, json=actor_input, headers=headers, params={"timeout": 300}
+        )
+
+        if response.status_code != 201:
+            raise Exception(f"Failed to start K.303 Puppeteer actor: {response.text}")
+
+        run_data = response.json()
+        run_id = run_data["data"]["id"]
+        status = run_data["data"]["status"]
+
+        # Poll for completion (longer timeout for Puppeteer)
+        if status not in ["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"]:
+            for _ in range(120):  # Up to 10 minutes
+                await asyncio.sleep(5)
+                status_url = f"https://api.apify.com/v2/actor-runs/{run_id}"
+                status_response = await client.get(status_url, headers=headers)
+                run_data = status_response.json()
+                status = run_data["data"]["status"]
+
+                if status in ["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"]:
+                    break
+
+        if status != "SUCCEEDED":
+            raise Exception(f"K.303 Puppeteer actor failed with status: {status}")
+
+        # Get downloaded files from key-value store
+        kv_store_id = run_data["data"]["defaultKeyValueStoreId"]
+
+        # List all keys in the store
+        list_url = f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/keys"
+        keys_response = await client.get(list_url, headers=headers)
+
+        if keys_response.status_code != 200:
+            raise Exception("Failed to list K.303 files from key-value store")
+
+        keys_data = keys_response.json()
+        keys = [
+            item["key"]
+            for item in keys_data.get("data", {}).get("items", [])
+            if item["key"].endswith((".xlsx", ".xls", ".csv"))
+        ]
+
+        if not keys:
+            raise Exception(f"No K.303 reports found for manager: {manager_name}")
+
+        # Download files (current and previous month)
+        current_content = b""
+        previous_content = b""
+
+        for i, key in enumerate(keys[:2]):
+            file_url = (
+                f"https://api.apify.com/v2/key-value-stores/{kv_store_id}/records/{key}"
+            )
+            file_response = await client.get(file_url, headers=headers)
+
+            if file_response.status_code == 200:
+                if i == 0:
+                    current_content = file_response.content
+                else:
+                    previous_content = file_response.content
+
+        if not current_content:
+            raise Exception(f"Failed to download K.303 report for: {manager_name}")
+
+        return current_content, previous_content
 
 
 # =======================
@@ -330,6 +540,30 @@ def build_hook1_email_html(
 </body></html>"""
 
 
+def build_hook5_email_html(
+    manager_name: str, report_filename: str, created_date: str, created_time: str
+) -> str:
+    """Build HTML email for Hook 5 (K.303 Disclosure)."""
+    return f"""<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><title>דוח גילוי נאות ק.303</title></head>
+<body style="font-family: 'Segoe UI', Tahoma, sans-serif; direction: rtl; padding: 20px;">
+<h1 style="color: #10B981;">דוח גילוי נאות ק.303 - {manager_name}</h1>
+<p>שם הדוח: {report_filename}</p>
+<p>תאריך יצירה: {created_date} {created_time}</p>
+<p>הדוח כולל בדיקות:</p>
+<ul>
+<li>בדיקה 1א - שלמות קרנות</li>
+<li>בדיקה 1ב - תקינות תאריכים</li>
+<li>בדיקה 2א - סבירות מול דוח קודם</li>
+<li>בדיקה 2ב - סבירות מול מאפייני הקרן</li>
+<li>בדיקות 3 - הצלבות קודים</li>
+</ul>
+<p>הדוח המלא מצורף למייל זה כקובץ Excel.</p>
+<hr><p style="color: #888;">Powered by 82Labs</p>
+</body></html>"""
+
+
 def send_report_email(
     to_emails: list[str],
     manager_name: str,
@@ -349,6 +583,12 @@ def send_report_email(
         report_filename = f"דוח_בקרה_חודשי_{manager_name}_{date_str}.xlsx"
         subject = f"דוח בקרה חודשי - {manager_name}"
         html_body = build_hook1_email_html(
+            manager_name, report_filename, created_date, created_time
+        )
+    elif hook_type == "hook5":
+        report_filename = f"דוח_גילוי_נאות_ק303_{manager_name}_{date_str}.xlsx"
+        subject = f"דוח גילוי נאות ק.303 - {manager_name}"
+        html_body = build_hook5_email_html(
             manager_name, report_filename, created_date, created_time
         )
     else:
@@ -393,7 +633,9 @@ def process_hook2_report(
     if not funds_list_path.exists():
         raise FileNotFoundError(f"Mutual Funds List not found at {funds_list_path}")
 
-    in_scope_funds = load_mizrahi_fund_ids(funds_list_path, MIZRAHI_TRUSTEE_NAME_DEFAULT)
+    in_scope_funds = load_mizrahi_fund_ids(
+        funds_list_path, MIZRAHI_TRUSTEE_NAME_DEFAULT
+    )
     rows, meta = load_manager_report(input_report_path)
 
     report_month = report_month or meta.get("report_month_inferred")
@@ -405,7 +647,9 @@ def process_hook2_report(
 
     # Filter to in-scope
     in_scope_rows = [r for r in rows if r.fund_no in in_scope_funds]
-    out_scope_rows = [r for r in rows if r.fund_no is not None and r.fund_no not in in_scope_funds]
+    out_scope_rows = [
+        r for r in rows if r.fund_no is not None and r.fund_no not in in_scope_funds
+    ]
 
     out_of_scope_funds: dict[int, dict[str, Any]] = {}
     if out_scope_rows:
@@ -414,7 +658,12 @@ def process_hook2_report(
             out_of_scope_funds[int(fid)] = {
                 "count_rows": int(cnt),
                 "fund_name": next(
-                    (r.fund_name for r in out_scope_rows if r.fund_no == fid and r.fund_name), None
+                    (
+                        r.fund_name
+                        for r in out_scope_rows
+                        if r.fund_no == fid and r.fund_name
+                    ),
+                    None,
                 ),
                 "reason": "לא ברשימת קרנות מזרחי",
             }
@@ -428,7 +677,9 @@ def process_hook2_report(
     ex_4d = check_4d_dachatz_vote_2_flag(in_scope_rows)
 
     # Valid rows for sampling
-    ex_row_nums = {e.row.row_num for e in (ex_dup + ex_date + ex_decision + ex_4g + ex_4d)}
+    ex_row_nums = {
+        e.row.row_num for e in (ex_dup + ex_date + ex_decision + ex_4g + ex_4d)
+    }
     valid_rows = [r for r in in_scope_rows if r.row_num not in ex_row_nums]
 
     # Check #5
@@ -442,16 +693,18 @@ def process_hook2_report(
         )
 
     price_limit_results = check_6_price_limits(in_scope_rows)
-    price_internal_results = check_6g_internal_price_discrepancy(
-        in_scope_rows, threshold_pct=price_threshold
-    )
+    price_internal_results = check_6g_internal_price_discrepancy(in_scope_rows)
 
     # Check #7
     problematic_lists = fetch_problematic_lists()
-    problematic_security_results = check_7_problematic_securities(in_scope_rows, problematic_lists)
+    problematic_security_results = check_7_problematic_securities(
+        in_scope_rows, problematic_lists
+    )
 
     unique_funds_in_input = len({r.fund_no for r in rows if r.fund_no is not None})
-    unique_mizrahi_funds_in_input = len({r.fund_no for r in in_scope_rows if r.fund_no is not None})
+    unique_mizrahi_funds_in_input = len(
+        {r.fund_no for r in in_scope_rows if r.fund_no is not None}
+    )
 
     summary = {
         "חודש דוח": report_month,
@@ -469,8 +722,12 @@ def process_hook2_report(
         "חריגות אי-התאמת מחירים פנימית": len(price_internal_results),
         "חריגות ניירות בעייתיים": len(problematic_security_results),
         "שורות תקינות לדגימה": len(valid_rows),
-        "דגימה אופן החלטה 1 - שורה": samples.decision_1.row_num if samples.decision_1 else None,
-        "דגימה אופן החלטה 2 - שורה": samples.decision_2.row_num if samples.decision_2 else None,
+        "דגימה אופן החלטה 1 - שורה": samples.decision_1.row_num
+        if samples.decision_1
+        else None,
+        "דגימה אופן החלטה 2 - שורה": samples.decision_2.row_num
+        if samples.decision_2
+        else None,
         "סף סטייה במחיר": f"{price_threshold}%",
     }
 
@@ -504,7 +761,9 @@ def process_hook2_report(
                     "security_no": sample.security_no or "",
                     "quantity": sample.quantity,
                     "price": sample.price,
-                    "tx_date": sample.tx_date.strftime("%d/%m/%Y") if sample.tx_date else "",
+                    "tx_date": sample.tx_date.strftime("%d/%m/%Y")
+                    if sample.tx_date
+                    else "",
                     "tx_type": sample.tx_type,
                     "decision_method": sample.decision_method,
                 }
@@ -515,6 +774,97 @@ def process_hook2_report(
         "num_samples": len(samples_data),
         "output_path": str(output_xlsx_path),
         "samples_data": samples_data,
+        "report_month": report_month,
+    }
+
+
+# =======================
+# Hook 5 Processing (K.303 Disclosure)
+# =======================
+
+
+def process_hook5_report(
+    current_report_path: Path,
+    previous_report_path: Path,
+    manager_name: str,
+    output_xlsx_path: Path,
+    report_month: str,
+    mutual_funds_list_path: Optional[Path] = None,
+) -> dict[str, Any]:
+    """Process Hook 5 (K.303 Disclosure) report."""
+    funds_list_path = mutual_funds_list_path or MUTUAL_FUNDS_LIST_PATH
+
+    # Load data
+    all_funds = load_k303_mutual_funds(funds_list_path)
+    in_scope_fund_ids = get_trustee_fund_ids(all_funds, K303_TRUSTEE_NAME)
+
+    current_rows = load_disclosure_report(current_report_path)
+    prev_rows = load_disclosure_report(previous_report_path)
+
+    # Calculate summary stats
+    funds_in_report = set(r.fund_no for r in current_rows if r.fund_no is not None)
+    in_scope_funds = funds_in_report & in_scope_fund_ids
+    out_of_scope_funds = funds_in_report - in_scope_fund_ids
+
+    summary = {
+        "total_funds_in_report": len(funds_in_report),
+        "in_scope_funds": len(in_scope_funds),
+        "out_of_scope_funds": len(out_of_scope_funds),
+        "total_rows": len(current_rows),
+    }
+
+    # Run checks
+    exceptions_1a = check_1a_fund_completeness(
+        current_rows, in_scope_fund_ids, all_funds
+    )
+    exceptions_1b = check_1b_report_month_validity(
+        current_rows, report_month, in_scope_fund_ids
+    )
+    exceptions_2a = check_2a_prev_month_comparison(
+        current_rows, prev_rows, in_scope_fund_ids
+    )
+    exceptions_2b = check_2b_exposure_profile(
+        current_rows, all_funds, in_scope_fund_ids
+    )
+    exceptions_3 = check_3_combinations(current_rows, in_scope_fund_ids)
+
+    # Write output
+    spec_path = K303_SPEC_FILE_PATH if K303_SPEC_FILE_PATH.exists() else None
+
+    write_k303_output_xlsx(
+        output_xlsx_path,
+        report_month=report_month,
+        manager_name=manager_name,
+        trustee_name=K303_TRUSTEE_NAME,
+        summary=summary,
+        exceptions_1a=exceptions_1a,
+        exceptions_1b=exceptions_1b,
+        exceptions_2a=exceptions_2a,
+        exceptions_2b=exceptions_2b,
+        exceptions_3=exceptions_3,
+        spec_file_path=spec_path,
+    )
+
+    # Count total exceptions
+    total_exceptions = (
+        len(exceptions_1a)
+        + len(exceptions_1b)
+        + len(exceptions_2a)
+        + len(exceptions_2b)
+        + sum(len(v) for v in exceptions_3.values())
+    )
+
+    return {
+        "summary": summary,
+        "total_exceptions": total_exceptions,
+        "check_results": {
+            "check_1a": len(exceptions_1a),
+            "check_1b": len(exceptions_1b),
+            "check_2a": len(exceptions_2a),
+            "check_2b": len(exceptions_2b),
+            "check_3": {k: len(v) for k, v in exceptions_3.items()},
+        },
+        "output_path": str(output_xlsx_path),
         "report_month": report_month,
     }
 
@@ -544,7 +894,9 @@ async def run_hook2_job(
 
         job_status[job_id]["message"] = "מוריד דוח עסקאות מיוחדות מ-TASE Maya..."
 
-        latest_content, _, original_filename = await run_apify_scraper(manager_name, "hook2")
+        latest_content, _, original_filename = await run_apify_scraper(
+            manager_name, "hook2"
+        )
         input_file_path = temp_dir / original_filename
         input_file_path.write_bytes(latest_content)
 
@@ -611,7 +963,9 @@ async def run_hook1_job(
 
         job_status[job_id]["message"] = "מוריד דוח חודשי מ-TASE Maya..."
 
-        latest_content, previous_content, _ = await run_apify_scraper(manager_name, "hook1")
+        latest_content, previous_content, _ = await run_apify_scraper(
+            manager_name, "hook1"
+        )
 
         current_report_path = temp_dir / f"{manager_name}_current.csv"
         current_report_path.write_bytes(latest_content)
@@ -681,6 +1035,85 @@ async def run_hook1_job(
         job_status[job_id]["message"] = f"שגיאה: {str(e)}"
 
 
+async def run_hook5_job(
+    job_id: str,
+    manager_name: str,
+    emails: list[str],
+    report_month: str,
+):
+    """Background task for Hook 5 (K.303 Disclosure)."""
+    try:
+        temp_dir = Path(tempfile.mkdtemp())
+
+        job_status[job_id]["status"] = "downloading"
+        job_status[job_id]["message"] = "מוריד רשימת קרנות מ-Maya..."
+
+        main_funds_content = await download_main_funds_list()
+        main_funds_path = temp_dir / "main_funds_list.csv"
+        main_funds_path.write_bytes(main_funds_content)
+
+        job_status[job_id]["message"] = "מוריד דוחות גילוי נאות ק.303 מ-ISA Magna..."
+
+        current_content, previous_content = await run_k303_apify_scraper(manager_name)
+
+        current_report_path = temp_dir / f"{manager_name}_k303_current.xlsx"
+        current_report_path.write_bytes(current_content)
+
+        previous_report_path = temp_dir / f"{manager_name}_k303_previous.xlsx"
+        if previous_content:
+            previous_report_path.write_bytes(previous_content)
+        else:
+            # Use current as previous if no previous available
+            previous_report_path.write_bytes(current_content)
+
+        job_status[job_id]["status"] = "processing"
+        job_status[job_id]["message"] = "מעבד את הדוח..."
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"k303_disclosure_{manager_name}_{timestamp}.xlsx"
+        output_path = OUTPUT_DIR / output_filename
+
+        result = process_hook5_report(
+            current_report_path=current_report_path,
+            previous_report_path=previous_report_path,
+            manager_name=manager_name,
+            output_xlsx_path=output_path,
+            report_month=report_month,
+            mutual_funds_list_path=main_funds_path,
+        )
+
+        job_status[job_id]["status"] = "sending_email"
+        job_status[job_id]["message"] = "שולח דוח במייל..."
+
+        email_result = send_report_email(
+            to_emails=emails,
+            manager_name=manager_name,
+            output_xlsx_path=output_path,
+            hook_type="hook5",
+        )
+
+        job_status[job_id]["status"] = "completed"
+        job_status[job_id]["message"] = "הדוח נשלח בהצלחה!"
+        job_status[job_id]["result"] = {
+            "summary": result["summary"],
+            "total_exceptions": result["total_exceptions"],
+            "check_results": result["check_results"],
+            "email_sent_to": emails,
+            "output_file": output_filename,
+            "email_id": email_result.get("id")
+            if isinstance(email_result, dict)
+            else str(email_result),
+        }
+
+        current_report_path.unlink(missing_ok=True)
+        previous_report_path.unlink(missing_ok=True)
+
+    except Exception as e:
+        job_status[job_id]["status"] = "failed"
+        job_status[job_id]["error"] = str(e)
+        job_status[job_id]["message"] = f"שגיאה: {str(e)}"
+
+
 # =======================
 # API Endpoints - General
 # =======================
@@ -691,10 +1124,11 @@ async def root():
     return {
         "status": "ok",
         "service": "Mizrahi Compliance Platform API",
-        "version": "4.0.0",
+        "version": "5.0.0",
         "hooks": {
-            "hook1": "Monthly Report (event 5615)",
-            "hook2": "Special Transactions (event 5618)",
+            "hook1": "Monthly Report (event 5618)",
+            "hook2": "Special Transactions (event 5615)",
+            "hook5": "K.303 Disclosure (ISA Magna)",
         },
     }
 
@@ -730,7 +1164,7 @@ async def process_report_endpoint(
 ):
     """
     Process Hook 2 - Special Transactions report (auto-download from TASE Maya).
-    Uses event ID 5618.
+    Uses event ID 5615.
 
     - **manager_name**: Fund manager name (Hebrew)
     - **email**: Recipient email(s), semicolon-separated
@@ -789,7 +1223,7 @@ async def process_monthly_report_endpoint(
 ):
     """
     Process Hook 1 - Monthly Report (auto-download from TASE Maya).
-    Uses event ID 5615.
+    Uses event ID 5618.
 
     - **manager_name**: Fund manager name (Hebrew)
     - **email**: Recipient email(s), semicolon-separated
@@ -824,7 +1258,73 @@ async def process_monthly_report_endpoint(
         emails=emails,
     )
 
-    return {"job_id": job_id, "status": "queued", "message": "Hook 1 - דוח חודשי: הבקשה התקבלה"}
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "message": "Hook 1 - דוח חודשי: הבקשה התקבלה",
+    }
+
+
+# =======================
+# API Endpoints - Hook 5 (K.303 Disclosure)
+# =======================
+
+
+@app.post("/api/process-disclosure-report")
+async def process_disclosure_report_endpoint(
+    background_tasks: BackgroundTasks,
+    manager_name: str = Form(...),
+    email: str = Form(...),
+    report_month: str = Form(None),
+):
+    """
+    Process Hook 5 - K.303 Disclosure Report (auto-download from ISA Magna).
+
+    - **manager_name**: Fund manager name (Hebrew)
+    - **email**: Recipient email(s), semicolon-separated
+    - **report_month**: Report month in YYYY-MM format (default: current month)
+    """
+    if manager_name not in K303_MANAGER_SEARCH_TERMS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"מנהל קרן לא מוכר לדוח ק.303: {manager_name}. אפשרויות: {', '.join(K303_MANAGER_SEARCH_TERMS.keys())}",
+        )
+
+    emails = [e.strip() for e in email.replace(",", ";").split(";") if e.strip()]
+    if not emails:
+        raise HTTPException(status_code=400, detail="נדרשת כתובת אימייל אחת לפחות")
+
+    if not APIFY_API_TOKEN:
+        raise HTTPException(status_code=500, detail="APIFY_API_TOKEN not configured")
+
+    # Default to current month if not specified
+    if not report_month:
+        report_month = datetime.now().strftime("%Y-%m")
+
+    job_id = str(uuid.uuid4())
+    job_status[job_id] = {
+        "status": "queued",
+        "message": "הבקשה התקבלה",
+        "created_at": datetime.now().isoformat(),
+        "hook_type": "hook5",
+        "manager_name": manager_name,
+        "emails": emails,
+        "report_month": report_month,
+    }
+
+    background_tasks.add_task(
+        run_hook5_job,
+        job_id=job_id,
+        manager_name=manager_name,
+        emails=emails,
+        report_month=report_month,
+    )
+
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "message": "Hook 5 - דוח גילוי נאות ק.303: הבקשה התקבלה",
+    }
 
 
 # =======================
