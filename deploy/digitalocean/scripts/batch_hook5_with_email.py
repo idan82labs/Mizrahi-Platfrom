@@ -106,9 +106,12 @@ def fetch_k303_reports(
         )
         previous_path.write_bytes(resp.content)
         log(f"Saved previous report: {previous_path} ({len(resp.content)} bytes)")
-    except requests.exceptions.HTTPError:
-        previous_path.write_bytes(b"")
-        log("No previous month report available (empty file created)")
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 404:
+            previous_path.write_bytes(b"")
+            log("No previous month report available (empty file created)")
+        else:
+            raise
 
     return current_path, previous_path, report_month
 
@@ -219,6 +222,11 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if args.report_month and not re.match(r'^\d{4}-(0[1-9]|1[0-2])$', args.report_month):
+        log(f"ERROR: Invalid --report-month format: '{args.report_month}' (expected YYYY-MM)")
+        return 1
+
     managers = [m.strip() for m in args.managers.split(",") if m.strip()]
     emails = [e.strip() for e in args.email.split(",") if e.strip()]
 
