@@ -1,34 +1,35 @@
 # Mizrahi System - Quick Cheat Sheet
 
-## 🚨 Two Separate Codebases
+## Deployment Location
 
-| Location | Purpose | Running |
-|----------|---------|---------|
-| `/opt/mizrahi/` | **Production** (deployed API) | ✅ systemd service |
-| `/root/` | **Development** (git repo) | Manual scripts |
+```
+/opt/mizrahi/             Production (systemd service)
+deploy/digitalocean/      Development (git repo)
+```
 
-## 🌐 URLs
+## URLs
 
 ```
 Production API:  https://209.38.226.220.nip.io
 Frontend:        https://mizrahi-smart-tools-portal.vercel.app
-TASE Maya:       https://maya.tase.co.il
 ```
 
-## 🔑 Credentials
+## Environment Variables
+
+Stored in `deploy/digitalocean/.env` (loaded via python-dotenv):
 
 ```bash
-APIFY_API_TOKEN=<REDACTED_APIFY_TOKEN>
-RESEND_API_KEY=<REDACTED_RESEND_KEY>
-FROM_EMAIL=notifications@82labs.io
+APIFY_API_TOKEN=<your_token>    # Required
+RESEND_API_KEY=<your_key>       # Required
+FROM_EMAIL=noreply@notifications.82labs.io
+TASE_API_KEY=<your_key>         # Optional (Hook 4)
 ```
 
-## 🎯 Quick Commands
+## Quick Commands
 
 ### Check Server Status
 ```bash
 curl https://209.38.226.220.nip.io/health
-ps aux | grep uvicorn
 sudo systemctl status mizrahi-api
 ```
 
@@ -38,97 +39,87 @@ sudo systemctl restart mizrahi-api
 sudo systemctl restart nginx
 ```
 
-### View Logs
+### Run Individual Hooks
 ```bash
-sudo journalctl -u mizrahi-api -f
-sudo tail -f /var/log/nginx/access.log
+cd deploy/digitalocean
+./run_hook1.sh --email "your@email.com"
+./run_hook2.sh --email "your@email.com"
+./run_hook5.sh --email "your@email.com"
 ```
 
-### Run Development Script
+### Run All Hooks for All Managers
 ```bash
-cd /root
-source mizrahi-venv/bin/activate
-export APIFY_TOKEN="<REDACTED_APIFY_TOKEN>"
-python batch_special_transactions.py --apify-token "$APIFY_TOKEN" --skip-tase-prices
+./run_all_managers.sh --email "your@email.com"
 ```
 
-### Update Production Code
+### Test Hooks Offline (No Apify Needed)
 ```bash
-# Edit in /root/, then:
-sudo cp /root/server.py /opt/mizrahi/
-sudo systemctl restart mizrahi-api
+./test_offline_hook2.sh סיגמא
+./test_offline_hook5.sh מגדל 2025-11
 ```
 
-## 📋 API Endpoints
+## API Endpoints
 
 ```
-GET  /health              - Health check
-GET  /api/managers        - List fund managers
-POST /api/process-report  - Start processing (manager_name, email)
-GET  /api/job/{id}        - Check job status
-GET  /api/download/{file} - Download report
+GET  /                              Health check
+GET  /api/managers                  List fund managers
+POST /api/process-report            Hook 2 - Special Transactions
+POST /api/process-monthly-report    Hook 1 - Monthly Report
+POST /api/process-disclosure-report Hook 5 - K.303 Disclosure
+GET  /api/job/{id}                  Check job status
+GET  /api/download/{file}           Download report
 ```
 
-## 👥 Fund Managers
+## Fund Managers (8)
 
 ```
-מגדל    10040  |  פורסט       10082
-איילון   10054  |  הראל        10031
-קסם     10047  |  אנליסט      10019
-סיגמא    10048  |  מיטב        10083
-איביאי   10068  |  אלטשולר-שחם  10017
+מגדל        10040  |  אנליסט      10019
+קסם         10047  |  מיטב        10083
+סיגמא       10048  |  איביאי      10068
+הראל        10031  |  אלטשולר-שחם  10017
 ```
 
-## 🔧 Infrastructure
+## Maya Event IDs
+
+```
+Hook 1 (Monthly Report):       5618
+Hook 2 (Special Transactions): 5615
+```
+
+## Email
+
+```
+Provider:    Resend API
+From:        noreply@notifications.82labs.io
+Recipients:  idan.t@82labs.io, elay.g@82labs.io
+```
+
+## Infrastructure
 
 ```
 Server IP:    209.38.226.220
-nip.io:       209.38.226.220.nip.io → 209.38.226.220
-Nginx:        443 → localhost:8000
+nip.io:       209.38.226.220.nip.io
+Nginx:        443 -> localhost:8000
 Uvicorn:      localhost:8000
-SSL:          Let's Encrypt
-Git User:     idan.t@82labs.io
+SSL:          Let's Encrypt (certbot)
 ```
 
-## 📧 Email
-
-```
-Production:   Resend API (notifications@82labs.io)
-Development:  Gmail SMTP (requires app password)
-Recipients:   idan.t@82labs.io, elay.g@82labs.io
-```
-
-## 🔄 Workflows
-
-**Special Transactions** (Production)
-```
-Frontend → API → Apify → Process → Email (Resend)
-```
-
-**Fund Automation** (n8n)
-```
-n8n Scheduler → fund_automation_complete.py → Email (n8n)
-```
-
-## 🐛 Quick Troubleshooting
+## Troubleshooting
 
 ```bash
 # Server down?
 sudo systemctl restart mizrahi-api
 
-# Check if port 8000 is bound
+# Check port 8000
 sudo netstat -tlnp | grep 8000
 
-# Test API manually
-curl -X POST https://209.38.226.220.nip.io/api/process-report \
-  -F "manager_name=מגדל" \
-  -F "email=test@example.com"
-
 # SSL cert expired?
-sudo certbot renew
-sudo systemctl restart nginx
+sudo certbot renew && sudo systemctl restart nginx
+
+# View logs
+sudo journalctl -u mizrahi-api -f
 ```
 
-## 📚 Full Documentation
+## Full Documentation
 
-See **SYSTEM_GUIDE.md** for complete reference
+See `docs/guides/SYSTEM_GUIDE.md` for complete reference.

@@ -1,16 +1,14 @@
 #!/bin/bash
 #
-# Test Hook 2 and compare with expected output
+# Test Hook 2: Special Transactions for a single manager
+# Usage: ./test_hook2.sh [MANAGER]
+#
+# Environment: Loads .env via python-dotenv (needs APIFY_API_TOKEN)
 #
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Load credentials
-if [ -f "$SCRIPT_DIR/config/credentials.env" ]; then
-    source "$SCRIPT_DIR/config/credentials.env"
-fi
 
 # Activate venv
 if [ -d "$SCRIPT_DIR/venv" ]; then
@@ -30,17 +28,10 @@ echo "Output: $OUTPUT_DIR"
 echo "=========================================="
 echo ""
 
-# Check APIFY_TOKEN
-if [ -z "$APIFY_TOKEN" ]; then
-    echo "ERROR: APIFY_TOKEN not set"
-    echo "Set it in config/credentials.env"
-    exit 1
-fi
-
-# Run hook for single manager
-python "$SCRIPT_DIR/scripts/batch_special_transactions.py" \
-    --apify-token "$APIFY_TOKEN" \
+# Run hook for single manager (no email sending)
+python "$SCRIPT_DIR/scripts/batch_hook2_with_email.py" \
     --managers "$MANAGER" \
+    --email "test@test.com" \
     --output-dir "$OUTPUT_DIR" \
     --skip-tase-prices
 

@@ -60,9 +60,9 @@ else
     echo "Expected: $EXPECTED_FILE"
     echo ""
 
-    # Compare file sizes
-    OUTPUT_SIZE=$(stat -c%s "$OUTPUT_FILE")
-    EXPECTED_SIZE=$(stat -c%s "$EXPECTED_FILE")
+    # Compare file sizes (portable: works on both Linux and macOS)
+    OUTPUT_SIZE=$(wc -c < "$OUTPUT_FILE" | tr -d ' ')
+    EXPECTED_SIZE=$(wc -c < "$EXPECTED_FILE" | tr -d ' ')
 
     echo "Output size: $OUTPUT_SIZE bytes"
     echo "Expected size: $EXPECTED_SIZE bytes"

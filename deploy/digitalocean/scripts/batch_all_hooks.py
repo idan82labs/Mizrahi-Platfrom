@@ -15,14 +15,12 @@ Environment Variables:
     RESEND_API_KEY  - Required for --send-email flag
 """
 
-import os
 import sys
 import json
 import base64
 import argparse
 import asyncio
 import subprocess
-import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Any
@@ -34,64 +32,37 @@ try:
 except ImportError:
     resend = None
 
-# =======================
-# Configuration
-# =======================
-
-FUND_MANAGERS = {
-    "מגדל": {"item_id": "10040", "name_en": "Migdal"},
-    "איילון": {"item_id": "10054", "name_en": "Ayalon"},
-    "קסם": {"item_id": "10047", "name_en": "Kesem"},
-    "סיגמא": {"item_id": "10048", "name_en": "Sigma"},
-    "פורסט": {"item_id": "10082", "name_en": "Forest"},
-    "הראל": {"item_id": "10031", "name_en": "Harel"},
-    "אנליסט": {"item_id": "10019", "name_en": "Analyst"},
-    "מיטב": {"item_id": "10083", "name_en": "Meitav"},
-    "איביאי": {"item_id": "10068", "name_en": "IBI"},
-    "אלטשולר-שחם": {"item_id": "10017", "name_en": "Altshuler-Shaham"},
-}
+from hook_utils import (
+    FUND_MANAGERS, SCRIPTS_DIR, MIZRAHI_LOGO_IMG,
+    APIFY_API_TOKEN, RESEND_API_KEY, FROM_EMAIL,
+    log as _log,
+)
 
 # Apify Actor IDs
 APIFY_MAIN_FUNDS_ACTOR = "K9WppTziYC3n2vxTu"
 APIFY_REPORT_SCRAPER_ACTOR = "5lhI6O39Qbgv9O0gs"
 APIFY_K303_SCRAPER_ACTOR = "iTpNz9ixbdQCmH43C"
 
-# Environment variables
-APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN", "")
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@notifications.82labs.io")
-DEFAULT_EMAIL = "alexandrf539@gmail.com"
-
 # Script paths
-SCRIPTS_DIR = Path(__file__).parent
 HOOK1_SCRIPT = SCRIPTS_DIR / "fund_automation_complete.py"
 HOOK2_SCRIPT = SCRIPTS_DIR / "mizrahi_special_transactions.py"
 HOOK5_SCRIPT = SCRIPTS_DIR / "disclosure_k303_validator.py"
-
-
-# =======================
-# Logging Helpers
-# =======================
+HOOK5_SPEC_FILE = SCRIPTS_DIR / "k303_spec.xlsx"
 
 
 def log(message: str) -> None:
-    """Print timestamped log message."""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{timestamp}] {message}")
+    _log(message)
 
 
 def log_success(message: str) -> None:
-    """Print success message."""
     log(f"✓ {message}")
 
 
 def log_error(message: str) -> None:
-    """Print error message."""
     log(f"✗ {message}")
 
 
 def log_info(message: str) -> None:
-    """Print info message."""
     log(f"ℹ {message}")
 
 
@@ -206,8 +177,7 @@ async def run_apify_scraper(
     if manager_name not in FUND_MANAGERS:
         raise ValueError(f"Unknown manager: {manager_name}")
 
-    manager_config = FUND_MANAGERS[manager_name]
-    item_id = manager_config["item_id"]
+    item_id = FUND_MANAGERS[manager_name]
 
     if hook_type == "hook1":
         maya_url = build_maya_url_hook1(item_id)
@@ -280,8 +250,7 @@ async def run_k303_apify_scraper(manager_name: str) -> tuple[bytes, bytes]:
     if manager_name not in FUND_MANAGERS:
         raise ValueError(f"Unknown manager: {manager_name}")
 
-    manager_config = FUND_MANAGERS[manager_name]
-    item_id = manager_config["item_id"]
+    item_id = FUND_MANAGERS[manager_name]
 
     maya_url = build_maya_url_hook5(item_id)
     actor_input = {"url": maya_url}
@@ -502,6 +471,9 @@ def run_hook5(
         manager_name,
     ]
 
+    if HOOK5_SPEC_FILE.exists():
+        cmd.extend(["--spec-file", str(HOOK5_SPEC_FILE)])
+
     try:
         result = subprocess.run(
             cmd,
@@ -673,7 +645,7 @@ def build_unified_email_html(
                     <!-- Header with Logo -->
                     <tr>
                         <td style="background-color: #ffffff; padding: 30px 40px; border-bottom: 1px solid #eef1f4; text-align: center;">
-                            <img src="https://storage.bhol.co.il/articles/35167_tumb_700X500.png" alt="מזרחי טפחות" style="max-height: 100px; max-width: 420px;">
+                            {MIZRAHI_LOGO_IMG}
                         </td>
                     </tr>
 
@@ -998,6 +970,9 @@ async def main_async(args: argparse.Namespace) -> int:
     batch_dir.mkdir(parents=True, exist_ok=True)
     log_info(f"Output directory: {batch_dir}")
 
+    # Resolve to absolute path for subprocess calls
+    batch_dir = batch_dir.resolve()
+
     # Download shared funds list
     try:
         funds_content = await download_main_funds_list()
@@ -1022,8 +997,10 @@ async def main_async(args: argparse.Namespace) -> int:
 
             # Send email if requested
             if args.send_email and result["status"] in ("success", "partial"):
+                # Support comma-separated emails
+                email_list = [e.strip() for e in args.email.split(",") if e.strip()]
                 email_result = send_unified_email(
-                    [args.email],
+                    email_list,
                     manager_name,
                     result["hook1"].get("xlsx"),
                     result["hook2"].get("xlsx"),
@@ -1086,13 +1063,13 @@ def main() -> int:
     )
     parser.add_argument(
         "--managers",
-        help="Comma-separated list of manager names (default: all 10)",
+        help=f"Comma-separated list of manager names (default: all {len(FUND_MANAGERS)})",
         default=None,
     )
     parser.add_argument(
         "--email",
-        default=DEFAULT_EMAIL,
-        help=f"Email recipient (default: {DEFAULT_EMAIL})",
+        required=True,
+        help="Comma-separated email addresses",
     )
     parser.add_argument(
         "--output-dir",

@@ -60,6 +60,7 @@ npm run dev
 | -------------------- | --------- | ---------- | -------------------------------- |
 | Monthly Report       | 5618      | **Active** | Monthly fund holdings validation |
 | Special Transactions | 5615      | **Active** | Coordinated trades validation    |
+| Daily Tracking       | TASE API  | **Active** | Daily fund tracking validation   |
 | K.303 Disclosure     | ISA Magna | **Active** | Disclosure report validation     |
 
 ---
@@ -69,10 +70,8 @@ npm run dev
 | Hebrew      | English          | ID    |
 | ----------- | ---------------- | ----- |
 | מגדל        | Migdal           | 10040 |
-| איילון      | Ayalon           | 10054 |
 | קסם         | Kesem            | 10047 |
 | סיגמא       | Sigma            | 10048 |
-| פורסט       | Forest           | 10082 |
 | הראל        | Harel            | 10031 |
 | אנליסט      | Analyst          | 10019 |
 | מיטב        | Meitav           | 10083 |
@@ -131,11 +130,12 @@ Defines fund managers and Apify settings:
 
 ## Environment Variables
 
-| Variable          | Required | Description              |
-| ----------------- | -------- | ------------------------ |
-| `APIFY_API_TOKEN` | Yes      | Apify API token          |
-| `RESEND_API_KEY`  | No       | Resend API key for email |
-| `OUTPUT_DIR`      | No       | Output directory         |
+| Variable          | Required | Description                               |
+| ----------------- | -------- | ----------------------------------------- |
+| `APIFY_API_TOKEN` | Yes      | Apify API token for TASE Maya data        |
+| `RESEND_API_KEY`  | Yes      | Resend API key for email delivery         |
+| `FROM_EMAIL`      | No       | Sender email address                      |
+| `TASE_API_KEY`    | No       | TASE Data Hub API key (Hook 4 index data) |
 
 ---
 

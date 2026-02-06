@@ -47,10 +47,8 @@ FUND_REPORTS_ACTOR_ID = "5lhI6O39Qbgv9O0gs"
 # Fund Manager Codes
 FUND_MANAGER_CODES = {
     "מגדל": "10040",
-    "איילון": "10054",
     "קסם": "10047",
     "סיגמא": "10048",
-    "פורסט": "10082",
     "הראל": "10031",
     "אנליסט": "10019",
     "מיטב": "10083",
@@ -89,14 +87,24 @@ def log(msg):
 # ============================================================================
 
 
-def apify_request(method, endpoint, json_data=None, params=None):
-    """Make request to Apify API"""
+def apify_request(method, endpoint, json_data=None, params=None, raise_for_status=True):
+    """Make request to Apify API.
+
+    Args:
+        method: HTTP method (GET, POST, etc.)
+        endpoint: API endpoint (starting with /)
+        json_data: JSON body for POST requests
+        params: Query parameters
+        raise_for_status: If True, raise HTTPError for error status codes.
+                         If False, return response and let caller handle errors.
+    """
     url = f"https://api.apify.com/v2{endpoint}"
     headers = {"Authorization": f"Bearer {APIFY_TOKEN}"}
     response = requests.request(
         method, url, headers=headers, json=json_data, params=params
     )
-    response.raise_for_status()
+    if raise_for_status:
+        response.raise_for_status()
     return response
 
 
@@ -164,61 +172,113 @@ def fetch_funds_list():
     return base64.b64decode(file_base64)
 
 
-def fetch_fund_reports(fund_code):
-    """Fetch fund manager reports from Apify"""
+def fetch_fund_reports(fund_code, max_retries=5, retry_delay=10):
+    """Fetch fund manager reports from Apify with retry logic.
+
+    The Maya website sometimes loads slowly, causing the Apify actor to timeout.
+    This function retries up to max_retries times if the actor fails to produce files.
+
+    Args:
+        fund_code: The fund manager code (e.g., "10048" for סיגמא)
+        max_retries: Maximum number of retry attempts (default: 5)
+        retry_delay: Seconds to wait between retries (default: 10)
+    """
     log(f"Fetching fund reports for code: {fund_code}")
 
     maya_url = build_maya_url(fund_code)
     log(f"Maya URL: {maya_url[:80]}...")
 
-    run_data = run_actor_and_wait(FUND_REPORTS_ACTOR_ID, {"url": maya_url}, timeout=180)
+    last_error = None
+    for attempt in range(1, max_retries + 1):
+        if attempt > 1:
+            log(f"Waiting {retry_delay}s before retry...")
+            time.sleep(retry_delay)
+            log(f"Retry attempt {attempt}/{max_retries}...")
 
-    # Get report name from dataset
-    dataset_id = run_data["defaultDatasetId"]
-    resp = apify_request("GET", f"/datasets/{dataset_id}/items")
-    items = resp.json()
+        try:
+            run_data = run_actor_and_wait(FUND_REPORTS_ACTOR_ID, {"url": maya_url}, timeout=180)
 
-    report_name = ""
-    if items and items[0].get("downloadedFiles"):
-        report_name = items[0]["downloadedFiles"][0].get("reportName", "")
+            # Get report name from dataset
+            dataset_id = run_data["defaultDatasetId"]
+            resp = apify_request("GET", f"/datasets/{dataset_id}/items")
+            items = resp.json()
 
-    if not report_name:
-        # Fallback: calculate from current date
-        today = datetime.now()
-        prev_month = today.replace(day=1) - timedelta(days=1)
-        hebrew_months = {
-            1: "ינואר",
-            2: "פברואר",
-            3: "מרץ",
-            4: "אפריל",
-            5: "מאי",
-            6: "יוני",
-            7: "יולי",
-            8: "אוגוסט",
-            9: "ספטמבר",
-            10: "אוקטובר",
-            11: "נובמבר",
-            12: "דצמבר",
-        }
-        report_name = f"{hebrew_months[prev_month.month]} {prev_month.year}"
+            # Check if actor actually succeeded with files (not just "succeeded" with error)
+            if items and items[0].get("error"):
+                error_msg = items[0]["error"]
+                log(f"Actor returned error: {error_msg[:100]}...")
+                last_error = Exception(f"Apify actor error: {error_msg[:200]}")
+                continue  # Retry
 
-    log(f"Report name: {report_name}")
+            report_name = ""
+            if items and items[0].get("downloadedFiles"):
+                downloaded = items[0]["downloadedFiles"]
+                if downloaded:
+                    report_name = downloaded[0].get("reportName", "")
+                    log(f"Downloaded {len(downloaded)} file(s)")
 
-    # Get CSVs from key-value store
-    kv_store_id = run_data["defaultKeyValueStoreId"]
+            if not report_name:
+                # Fallback: calculate from current date
+                today = datetime.now()
+                prev_month = today.replace(day=1) - timedelta(days=1)
+                hebrew_months = {
+                    1: "ינואר",
+                    2: "פברואר",
+                    3: "מרץ",
+                    4: "אפריל",
+                    5: "מאי",
+                    6: "יוני",
+                    7: "יולי",
+                    8: "אוגוסט",
+                    9: "ספטמבר",
+                    10: "אוקטובר",
+                    11: "נובמבר",
+                    12: "דצמבר",
+                }
+                report_name = f"{hebrew_months[prev_month.month]} {prev_month.year}"
 
-    current_resp = apify_request(
-        "GET", f"/key-value-stores/{kv_store_id}/records/report_latest_month.csv"
-    )
-    previous_resp = apify_request(
-        "GET", f"/key-value-stores/{kv_store_id}/records/report_previous_month.csv"
-    )
+            log(f"Report name: {report_name}")
 
-    log(
-        f"Fetched CSVs - current: {len(current_resp.content)} bytes, previous: {len(previous_resp.content)} bytes"
-    )
+            # Get CSVs from key-value store
+            kv_store_id = run_data["defaultKeyValueStoreId"]
 
-    return current_resp.content, previous_resp.content, report_name
+            current_resp = apify_request(
+                "GET", f"/key-value-stores/{kv_store_id}/records/report_latest_month.csv",
+                raise_for_status=False
+            )
+
+            # Check if we got the file (404 means actor failed to produce it)
+            if current_resp.status_code == 404:
+                log("CSV file not found - actor may have failed silently")
+                last_error = Exception("report_latest_month.csv not found in key-value store")
+                continue  # Retry
+
+            current_resp.raise_for_status()
+
+            previous_resp = apify_request(
+                "GET", f"/key-value-stores/{kv_store_id}/records/report_previous_month.csv",
+                raise_for_status=False
+            )
+
+            log(
+                f"Fetched CSVs - current: {len(current_resp.content)} bytes, previous: {len(previous_resp.content)} bytes"
+            )
+
+            return current_resp.content, previous_resp.content, report_name
+
+        except requests.exceptions.HTTPError as e:
+            if "404" in str(e):
+                log(f"File not found (attempt {attempt}): {e}")
+                last_error = e
+                continue  # Retry
+            raise  # Other HTTP errors should propagate
+        except Exception as e:
+            log(f"Error on attempt {attempt}: {e}")
+            last_error = e
+            continue  # Retry
+
+    # All retries exhausted
+    raise Exception(f"Failed to fetch fund reports after {max_retries} attempts. Last error: {last_error}")
 
 
 def fix_shifted_encoding(content: bytes) -> bytes:

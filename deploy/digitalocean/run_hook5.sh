@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Run Hook 2: Special Transactions Validation
-# Usage: ./run_hook2.sh --email "your@email.com"
-#        ./run_hook2.sh --managers "סיגמא,מגדל" --email "your@email.com"
+# Run Hook 5: K.303 Disclosure Validation
+# Usage: ./run_hook5.sh --email "your@email.com"
+#        ./run_hook5.sh --managers "מגדל,הראל" --email "your@email.com"
 #
 
 set -e
@@ -17,14 +17,14 @@ elif [ -d "/opt/mizrahi/venv" ]; then
 fi
 
 echo "=========================================="
-echo "HOOK 2: SPECIAL TRANSACTIONS VALIDATION"
+echo "HOOK 5: K.303 DISCLOSURE VALIDATION"
 echo "=========================================="
 echo ""
 
 # Run batch processor (loads .env via python-dotenv)
-python "$SCRIPT_DIR/scripts/batch_hook2_with_email.py" "$@"
+python "$SCRIPT_DIR/scripts/batch_hook5_with_email.py" "$@"
 
 echo ""
 echo "=========================================="
-echo "HOOK 2 COMPLETE"
+echo "HOOK 5 COMPLETE"
 echo "=========================================="

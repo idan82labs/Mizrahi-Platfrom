@@ -1,201 +1,210 @@
-# Batch Special Transactions Processing - Quick Start Guide
+# Batch Processing Guide
 
-This guide explains how to run the batch processor for all fund managers and send results to elay.g@82labs.io.
+**Last Updated**: 2026-02-06
 
 ## Overview
 
-The batch processing system consists of three main scripts:
+All batch processing uses dedicated Python scripts that:
+1. Fetch data from Apify actors (Maya TASE / ISA Magna)
+2. Run the processor script for each manager
+3. Send branded HTML emails with Excel attachments via Resend API
 
-1. **batch_special_transactions.py** - Main batch processor that:
-   - Fetches Mutual Funds List from Apify
-   - For each manager, fetches their special transactions report
-   - Runs mizrahi_special_transactions.py validation
-   - Generates output XLSX and email JSON files
+### Batch Scripts
 
-2. **send_batch_email.py** - Email sender that:
-   - Collects all results from batch processing
-   - Sends consolidated email with attachments to specified recipient
+| Script                      | Hook | Description                    |
+|-----------------------------|------|--------------------------------|
+| `batch_hook1_with_email.py` | 1    | Monthly Report validation      |
+| `batch_hook2_with_email.py` | 2    | Special Transactions validation|
+| `batch_hook5_with_email.py` | 5    | K.303 Disclosure validation    |
+| `batch_all_hooks.py`        | All  | Unified: Hook 1 + 2 + 5       |
 
-3. **mizrahi_special_transactions.py** - Core validation script (already exists)
+All scripts import shared code from `hook_utils.py` (constants, Apify helpers,
+email templates, logging).
+
+---
 
 ## Prerequisites
 
-### 1. Python Packages
+### 1. Python Dependencies
 
 ```bash
-source /root/mizrahi-venv/bin/activate  # If using virtual environment
-pip install requests openpyxl
+cd deploy/digitalocean
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### 2. Apify API Token
+### 2. Environment Variables
 
-You need an Apify API token to fetch data from Apify actors.
-
-### 3. Gmail App Password (for email sending)
-
-To send emails via Gmail:
-1. Enable 2-factor authentication on your Google account
-2. Go to https://myaccount.google.com/apppasswords
-3. Create an App Password for "Mail"
-4. Save this password (you'll need it for the email sender)
-
-## Quick Start - Run Everything
-
-### Step 1: Set Your Apify Token
+Create `.env` from template:
 
 ```bash
-export APIFY_TOKEN="your_apify_token_here"
+cp config/credentials.env.example .env
+nano .env  # Fill in your API keys
 ```
 
-### Step 2: Run Batch Processor
+Required variables:
 
-Process all 10 managers (recommended):
+| Variable          | Required | Source                                      |
+|-------------------|----------|---------------------------------------------|
+| `APIFY_API_TOKEN` | Yes      | https://console.apify.com/account/integrations |
+| `RESEND_API_KEY`  | Yes      | https://resend.com/api-keys                 |
+| `FROM_EMAIL`      | No       | Default: noreply@notifications.82labs.io    |
+| `TASE_API_KEY`    | No       | https://info.tase.co.il/en/datahub (Hook 4)|
+
+---
+
+## Running Batch Processing
+
+### Individual Hooks
 
 ```bash
-python /root/batch_special_transactions.py \
-  --apify-token "$APIFY_TOKEN" \
-  --output-dir ./batch_output \
-  --skip-tase-prices
+cd deploy/digitalocean
+
+# Hook 1 - All 8 managers
+python scripts/batch_hook1_with_email.py --email "idan.t@82labs.io,elay.g@82labs.io"
+
+# Hook 2 - All 8 managers
+python scripts/batch_hook2_with_email.py --email "idan.t@82labs.io,elay.g@82labs.io"
+
+# Hook 5 - All 8 managers
+python scripts/batch_hook5_with_email.py --email "idan.t@82labs.io,elay.g@82labs.io"
 ```
 
-Process specific managers only:
+### Specific Managers
 
 ```bash
-python /root/batch_special_transactions.py \
-  --apify-token "$APIFY_TOKEN" \
-  --managers "מגדל,איילון,סיגמא" \
-  --output-dir ./batch_output
+python scripts/batch_hook1_with_email.py --managers "מגדל,סיגמא" --email "your@email.com"
+python scripts/batch_hook2_with_email.py --managers "מגדל,הראל" --email "your@email.com"
+python scripts/batch_hook5_with_email.py --managers "מגדל" --email "your@email.com"
 ```
 
-With all options:
+### All Hooks at Once
 
 ```bash
-python /root/batch_special_transactions.py \
-  --apify-token "$APIFY_TOKEN" \
-  --output-dir ./batch_output \
-  --price-threshold 5.0 \
-  --seed 123 \
-  --email elay.g@82labs.io \
-  --skip-tase-prices
+# Via unified batch script (sends consolidated email per manager)
+python scripts/batch_all_hooks.py --email "your@email.com" --send-email
+
+# Via shell script (runs each hook sequentially)
+./run_all_managers.sh --email "your@email.com"
 ```
 
-### Step 3: Send Results Email
-
-After batch processing completes, send the results:
+### Shell Script Runners
 
 ```bash
-python /root/send_batch_email.py \
-  --batch-dir ./batch_output/20260114_120000 \
-  --gmail-user your.email@gmail.com \
-  --gmail-app-password "your_app_password" \
-  --recipient elay.g@82labs.io
+./run_hook1.sh --email "your@email.com"
+./run_hook2.sh --email "your@email.com"
+./run_hook5.sh --email "your@email.com"
+./run_all_managers.sh --email "your@email.com"
 ```
 
-Replace `20260114_120000` with the actual timestamp directory created by the batch processor.
+---
 
 ## Command-Line Arguments
 
-### batch_special_transactions.py
+All batch scripts share a consistent CLI interface:
 
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `--apify-token` | Yes | Apify API token for fetching data |
-| `--managers` | No | Comma-separated list of managers (default: all 10) |
-| `--output-dir` | No | Base output directory (default: ./batch_output) |
-| `--skip-tase-prices` | No | Skip TASE price checks for faster processing |
-| `--price-threshold` | No | Price variance threshold % (default: 5.0) |
-| `--spec-file` | No | Path to specification table Excel file |
-| `--seed` | No | RNG seed for reproducible sampling |
-| `--email` | No | Email recipient (default: elay.g@82labs.io) |
+| Argument         | Required | Description                              |
+|------------------|----------|------------------------------------------|
+| `--email`        | Yes      | Comma-separated recipient email addresses|
+| `--managers`     | No       | Comma-separated manager names (default: all 8) |
+| `--output-dir`   | No       | Output directory (default: ./output/batch_hookN) |
 
-### send_batch_email.py
+Hook 2 additional options:
 
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `--batch-dir` | Yes | Path to batch output directory with timestamp |
-| `--gmail-user` | Yes | Gmail email address for sending |
-| `--gmail-app-password` | Yes | Gmail App Password (not regular password!) |
-| `--recipient` | No | Email recipient (default: elay.g@82labs.io) |
+| Argument             | Description                              |
+|----------------------|------------------------------------------|
+| `--spec-file`        | Path to specification Excel file         |
+| `--skip-tase-prices` | Skip TASE price checks (faster)          |
+
+---
 
 ## Output Structure
 
-After running the batch processor, you'll have:
+Each batch run creates a timestamped directory:
 
 ```
-batch_output/
-└── 20260114_120000/              # Timestamp directory
-    ├── Mutual_Funds_List.xlsx    # Fetched from Apify
-    ├── batch_summary.txt          # Human-readable summary
-    ├── batch_summary.json         # JSON summary
+output/batch_hook1/
+└── 20260206_090000/
+    ├── Mutual_Funds_List.xlsx
+    ├── batch_summary.json
     ├── מגדל/
-    │   ├── מגדל_special_transactions.csv
-    │   ├── מגדל_special_transactions_report.xlsx
+    │   ├── דוח_מגדל_2025-12.xlsx
     │   └── מגדל_email.json
-    ├── איילון/
-    │   ├── איילון_special_transactions.csv
-    │   ├── איילון_special_transactions_report.xlsx
-    │   └── איילון_email.json
-    └── ... (one directory per manager)
+    ├── סיגמא/
+    │   └── ...
+    └── ...
 ```
 
-## Fund Managers Supported
+---
 
-The batch processor supports all 10 fund managers:
+## Fund Managers (8)
 
-1. מגדל (Migdal) - 10040
-2. איילון (Ayalon) - 10054
-3. קסם (Kesem) - 10047
-4. סיגמא (Sigma) - 10048
-5. פורסט (Forest) - 10082
-6. הראל (Harel) - 10031
-7. אנליסט (Analyst) - 10019
-8. מיטב (Meitav) - 10083
-9. איביאי (IBI) - 10068
-10. אלטשולר-שחם (Altshuler Shaham) - 10017
+| Name        | ID    |
+|-------------|-------|
+| מגדל        | 10040 |
+| קסם         | 10047 |
+| סיגמא       | 10048 |
+| הראל        | 10031 |
+| אנליסט      | 10019 |
+| מיטב        | 10083 |
+| איביאי      | 10068 |
+| אלטשולר-שחם | 10017 |
+
+---
+
+## Testing
+
+### Offline Tests (No Apify Needed)
+
+```bash
+# Hook 2 - uses local test data
+./test_offline_hook2.sh סיגמא
+
+# Hook 5 - uses local test data
+./test_offline_hook5.sh מגדל 2025-11
+```
+
+### Live Tests (Requires Apify Token)
+
+```bash
+# Single manager test
+./test_hook1.sh סיגמא
+./test_hook2.sh סיגמא
+
+# Unified batch test (single manager, no email)
+./test_batch_all.sh "your@email.com" סיגמא
+```
+
+### Processing Time
+
+- Per manager: ~2-5 minutes (depends on Apify actor speed)
+- All 8 managers, all hooks: ~30-60 minutes
+- With `--skip-tase-prices`: ~50% faster for Hook 2
+
+---
 
 ## Troubleshooting
 
-### "No report available" for a manager
+### "No report available" for a Manager
 
-This means the Apify actor couldn't fetch the special transactions report for that manager. This could be due to:
-- No reports available on Maya for that manager
-- Different URL format needed for special transactions
-- Network/timeout issues
+The Apify actor could not find a report on Maya for that manager/month.
+This is normal if no report was filed yet.
 
-### Email sending fails
+### Email Not Received
 
-Common issues:
-1. **Not using App Password**: You must use a Gmail App Password, not your regular password
-2. **2FA not enabled**: Enable 2-factor authentication first
-3. **Wrong email**: Make sure you're using a Gmail address
+1. Check `RESEND_API_KEY` is set in `.env`
+2. Check sender email is verified in Resend dashboard
+3. Check spam folder
+4. Verify `--email` flag was provided
 
-### Batch processing is slow
+### Batch Processing Slow
 
-The batch processor processes each manager sequentially. For 10 managers with TASE price checks, expect:
-- With `--skip-tase-prices`: ~5-10 minutes total
-- Without skipping: ~20-30 minutes total
+- Use `--skip-tase-prices` for Hook 2
+- Process specific managers with `--managers`
+- Each hook has retry logic (3 attempts, 30s delay)
 
-To speed up:
-- Use `--skip-tase-prices` flag
-- Process only specific managers with `--managers`
-
-## Test Mode - Single Manager
-
-To test with just one manager first:
-
-```bash
-python /root/batch_special_transactions.py \
-  --apify-token "$APIFY_TOKEN" \
-  --managers "סיגמא" \
-  --output-dir ./test_output \
-  --skip-tase-prices
-```
-
-## Logs
-
-The batch processor creates detailed logs in the output directory. Each manager's processing logs are stored in:
-- Main script output: captured in batch_summary.json
-- Individual script logs: in `log/` directories created by mizrahi_special_transactions.py
+---
 
 ## Support
 

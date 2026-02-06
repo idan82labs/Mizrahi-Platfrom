@@ -9,63 +9,59 @@ Unified hosting for all validation hooks on Digital Ocean server:
 ## Quick Start
 
 ```bash
-# 1. Copy files to server
-scp -r deploy/digitalocean/* root@209.38.226.220:/opt/mizrahi/
+# 1. Setup environment
+cd deploy/digitalocean
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 
-# 2. SSH to server
-ssh root@209.38.226.220
+# 2. Configure credentials
+cp config/credentials.env.example .env
+nano .env  # Add your API keys
 
-# 3. Setup environment
-cd /opt/mizrahi
-./setup.sh
+# 3. Run individual hooks
+python scripts/batch_hook1_with_email.py --email "your@email.com"
+python scripts/batch_hook2_with_email.py --email "your@email.com"
+python scripts/batch_hook5_with_email.py --email "your@email.com"
 
-# 4. Configure credentials
-cp config/credentials.env.example config/credentials.env
-nano config/credentials.env  # Add your API keys
-
-# 5. Run hooks
-./run_hook1.sh             # Monthly Report (single manager)
-./run_hook2.sh             # Special Transactions (single manager)
-./run_all_managers.sh      # Both hooks for all managers
+# 4. Run all hooks for all managers
+python scripts/batch_all_hooks.py --email "your@email.com" --send-email
 ```
 
 ## Directory Structure
 
 ```
 /opt/mizrahi/
+├── .env                                # Environment variables (gitignored)
+├── requirements.txt                    # Python dependencies
+├── server.py                           # Unified FastAPI server
 ├── scripts/
-│   ├── fund_automation_complete.py     # Hook 1: Monthly Report
-│   ├── mizrahi_special_transactions.py # Hook 2: Special Transactions
-│   ├── disclosure_k303_validator.py    # Hook 5: K.303 Disclosure
-│   ├── batch_special_transactions.py   # Hook 2: Batch processor
-│   ├── batch_monthly_report.py         # Hook 1: Batch processor
-│   └── send_email.py                   # Email utility
+│   ├── hook_utils.py                   # Shared utilities (constants, Apify, email)
+│   ├── fund_automation_complete.py     # Hook 1: Monthly Report processor
+│   ├── mizrahi_special_transactions.py # Hook 2: Special Transactions processor
+│   ├── mizrahi_4_logic.py              # Hook 4: Daily Tracking processor
+│   ├── disclosure_k303_validator.py    # Hook 5: K.303 Disclosure processor
+│   ├── batch_hook1_with_email.py       # Hook 1: Batch runner + email
+│   ├── batch_hook2_with_email.py       # Hook 2: Batch runner + email
+│   ├── batch_hook5_with_email.py       # Hook 5: Batch runner + email
+│   └── batch_all_hooks.py             # Unified batch runner (all hooks)
 ├── config/
-│   ├── credentials.env.example
-│   └── credentials.env                 # Your API keys (gitignored)
-├── test_data/
-│   └── hook5/                          # K.303 test data
-├── output/                             # Generated reports
-├── logs/                               # Execution logs
-├── run_hook1.sh                        # Run Hook 1
-├── run_hook2.sh                        # Run Hook 2
-├── test_offline_hook5.sh               # Test Hook 5 offline
-├── test_hook5.sh                       # Test Hook 5 via API
-├── run_all_managers.sh                 # Run all hooks for all managers
+│   └── credentials.env.example         # Template for .env
+├── test_data/                          # Test data for validation
+├── output/                             # Generated reports (gitignored)
 └── setup.sh                            # Initial setup script
 ```
 
 ## Email Configuration
 
-**Test Email:** `alexandrf539@gmail.com`
+All batch scripts use the Resend API for email delivery. The `--email` flag is
+required and accepts comma-separated addresses:
 
-All scripts are configured to send results to this test email. To change, edit
-the `EMAIL_RECIPIENT` variable in:
+```bash
+python scripts/batch_hook1_with_email.py --email "idan.t@82labs.io,elay.g@82labs.io"
+```
 
-- `scripts/batch_monthly_report.py`
-- `scripts/batch_special_transactions.py`
-
-Or use the `--email` command line argument.
+Environment variables are loaded from `.env` via `python-dotenv`.
 
 ## Hooks Overview
 
@@ -97,27 +93,21 @@ Or use the `--email` command line argument.
 ### Hook 1 (Monthly Report)
 
 ```bash
-# Single manager
-./run_hook1.sh --fund-name "סיגמא"
-
-# With email
-./run_hook1.sh --fund-name "סיגמא" --send-email
-
 # All managers
-python scripts/batch_monthly_report.py --send-email
+python scripts/batch_hook1_with_email.py --email "your@email.com"
+
+# Specific managers
+python scripts/batch_hook1_with_email.py --managers "סיגמא,מגדל" --email "your@email.com"
 ```
 
 ### Hook 2 (Special Transactions)
 
 ```bash
-# Single manager
-./run_hook2.sh --manager "סיגמא"
-
 # All managers
-python scripts/batch_special_transactions.py --apify-token $APIFY_TOKEN
+python scripts/batch_hook2_with_email.py --email "your@email.com"
 
-# With email
-python scripts/batch_special_transactions.py --apify-token $APIFY_TOKEN --send-email
+# Specific managers with spec file
+python scripts/batch_hook2_with_email.py --managers "מגדל,הראל" --email "your@email.com" --spec-file spec-file.xlsx
 ```
 
 ### Hook 5 (K.303 Disclosure)
@@ -155,20 +145,17 @@ diff -r output/test_run/ test_data/expected_output/
 
 ## Troubleshooting
 
-### Gmail App Password
-
-1. Enable 2-factor authentication on Google account
-2. Go to: https://myaccount.google.com/apppasswords
-3. Generate an App Password for "Mail"
-4. Use this password (not your regular password)
-
 ### Apify Token
 
 Get your token from: https://console.apify.com/account/integrations
 
+### Resend API Key
+
+Get your key from: https://resend.com/api-keys
+
 ### Missing Dependencies
 
 ```bash
-source /opt/mizrahi/venv/bin/activate
-pip install pandas openpyxl requests
+source venv/bin/activate
+pip install -r requirements.txt
 ```

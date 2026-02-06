@@ -40,10 +40,15 @@ mizrahi-compliance-platform/
 │   └── digitalocean/          # Main deployment code
 │       ├── server.py          # Unified FastAPI server
 │       ├── scripts/
-│       │   ├── mizrahi_special_transactions.py  # Hook 2 processor
+│       │   ├── hook_utils.py                    # Shared utilities module
 │       │   ├── fund_automation_complete.py      # Hook 1 processor
+│       │   ├── mizrahi_special_transactions.py  # Hook 2 processor
+│       │   ├── mizrahi_4_logic.py               # Hook 4 processor
 │       │   ├── disclosure_k303_validator.py     # Hook 5 processor
-│       │   └── batch_*.py
+│       │   ├── batch_hook1_with_email.py        # Hook 1 batch runner
+│       │   ├── batch_hook2_with_email.py        # Hook 2 batch runner
+│       │   ├── batch_hook5_with_email.py        # Hook 5 batch runner
+│       │   └── batch_all_hooks.py               # Unified batch runner
 │       ├── test_data/         # Test data for validation
 │       ├── config/            # Local config
 │       └── README.md
@@ -158,6 +163,17 @@ Validates coordinated and off-exchange trades.
 6. Price Checks - Price > 100 and internal comparison
 7. Problematic Securities - Warning/halt/restricted lists
 
+### Hook 4: Daily Tracking (TASE Data Hub)
+
+Validates daily fund tracking data against TASE market data.
+
+**Checks:**
+
+1. NAV tracking against benchmark index
+2. BFIX/Bloomberg exchange rate validation
+3. Management fee calculation verification
+4. Index tracking accuracy (INDX)
+
 ### Hook 5: K.303 Disclosure Validation (ISA Magna)
 
 Validates K.303 disclosure reports from ISA Magna.
@@ -232,14 +248,15 @@ Validates K.303 disclosure reports from ISA Magna.
 | Variable          | Required | Description                                      |
 | ----------------- | -------- | ------------------------------------------------ |
 | `APIFY_API_TOKEN` | Yes      | Apify API token for data fetching                |
-| `RESEND_API_KEY`  | No       | Resend API key for email sending                 |
-| `OUTPUT_DIR`      | No       | Output directory (default: /tmp/mizrahi-outputs) |
+| `RESEND_API_KEY`  | Yes      | Resend API key for email delivery                |
+| `FROM_EMAIL`      | No       | Sender email (default: noreply@notifications.82labs.io) |
+| `TASE_API_KEY`    | No       | TASE Data Hub API key (for Hook 4 index data)    |
 
 ## Domain Context
 
-### Fund Managers (10 configured)
+### Fund Managers (8 configured)
 
-מגדל, איילון, קסם, סיגמא, פורסט, הראל, אנליסט, מיטב, איביאי, אלטשולר-שחם
+מגדל, קסם, סיגמא, הראל, אנליסט, מיטב, איביאי, אלטשולר-שחם
 
 ### Maya TASE Event IDs
 

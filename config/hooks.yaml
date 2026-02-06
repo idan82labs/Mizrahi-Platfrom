@@ -13,7 +13,7 @@ defaults:
 hooks:
   # ============================================
   # Hook #1: Monthly Report Validation
-  # Maya Event ID: 5615
+  # Maya Event ID: 5618
   # ============================================
   monthly_report:
     id: "monthly_report"
@@ -23,7 +23,7 @@ hooks:
     status: "active"
 
     # Maya TASE event ID for downloading reports
-    event_id: 5615
+    event_id: 5618
 
     schedule:
       enabled: true
@@ -110,7 +110,7 @@ hooks:
 
   # ============================================
   # Hook #2: Special Transactions Validation
-  # Maya Event ID: 5618
+  # Maya Event ID: 5615
   # ============================================
   special_transactions:
     id: "special_transactions"
@@ -120,7 +120,7 @@ hooks:
     status: "active"
 
     # Maya TASE event ID for downloading reports
-    event_id: 5618
+    event_id: 5615
 
     schedule:
       enabled: false  # Manual trigger via API

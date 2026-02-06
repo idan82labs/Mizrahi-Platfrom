@@ -1,9 +1,14 @@
 # Credentials (never commit!)
+.env
 config/credentials.env
 
 # Output files
 output/
+log/
 logs/
+scripts/log/
+scripts/output/
+test_output/
 
 # Virtual environment
 venv/
@@ -16,3 +21,6 @@ __pycache__/
 # Temporary files
 *.tmp
 temp/
+
+# Test artifacts
+scripts/test_data/

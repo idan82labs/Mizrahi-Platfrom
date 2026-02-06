@@ -13,12 +13,6 @@ managers:
     name_en: "Migdal"
     enabled: true
 
-  ayalon:
-    id: "10054"
-    name_he: "איילון"
-    name_en: "Ayalon"
-    enabled: true
-
   kesem:
     id: "10047"
     name_he: "קסם"
@@ -29,12 +23,6 @@ managers:
     id: "10048"
     name_he: "סיגמא"
     name_en: "Sigma"
-    enabled: true
-
-  forest:
-    id: "10082"
-    name_he: "פורסט"
-    name_en: "Forest"
     enabled: true
 
   harel:
@@ -76,5 +64,5 @@ apify:
 
 # Maya TASE event IDs for report downloads
 maya_event_ids:
-  monthly_report: 5615      # Hook 1 - דוח חודשי
-  special_transactions: 5618 # Hook 2 - עסקאות מיוחדות
+  monthly_report: 5618      # Hook 1 - דוח חודשי
+  special_transactions: 5615 # Hook 2 - עסקאות מיוחדות

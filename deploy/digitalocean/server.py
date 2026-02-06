@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Mizrahi Compliance Platform - Unified FastAPI Server v5
+Mizrahi Compliance Platform - Unified FastAPI Server v5.0
 Supports Hook 1, Hook 2, and Hook 5:
 
 Hook 1 (Monthly Report): Event ID 5618
 Hook 2 (Special Transactions): Event ID 5615
-Hook 5 (K.303 Disclosure): Maya TASE reports
+Hook 5 (K.303 Disclosure): ISA Magna via Maya TASE
 """
 
 import asyncio
@@ -19,10 +19,13 @@ from pathlib import Path
 from typing import Any, Optional
 from collections import Counter
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 import resend
+
+load_dotenv()
 
 # Import Hook 2 processor
 from scripts.mizrahi_special_transactions import (
@@ -99,10 +102,8 @@ if RESEND_API_KEY:
 
 FUND_MANAGERS = {
     "מגדל": {"item_id": "10040", "name_en": "Migdal"},
-    "איילון": {"item_id": "10054", "name_en": "Ayalon"},
     "קסם": {"item_id": "10047", "name_en": "Kesem"},
     "סיגמא": {"item_id": "10048", "name_en": "Sigma"},
-    "פורסט": {"item_id": "10082", "name_en": "Forest"},
     "הראל": {"item_id": "10031", "name_en": "Harel"},
     "אנליסט": {"item_id": "10019", "name_en": "Analyst"},
     "מיטב": {"item_id": "10083", "name_en": "Meitav"},
@@ -116,8 +117,8 @@ FUND_MANAGERS = {
 
 app = FastAPI(
     title="Mizrahi Compliance Platform API",
-    description="Unified API for Hook 1 (Monthly Report) and Hook 2 (Special Transactions)",
-    version="4.0.0",
+    description="Unified API for Hook 1 (Monthly Report), Hook 2 (Special Transactions), and Hook 5 (K.303 Disclosure)",
+    version="5.0.0",
 )
 
 app.add_middleware(
@@ -126,7 +127,6 @@ app.add_middleware(
         "https://mizrahi-smart-tools-portal.vercel.app",
         "http://localhost:3000",
         "http://localhost:5173",
-        "*",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -445,61 +445,151 @@ async def run_k303_apify_scraper(manager_name: str) -> tuple[bytes, bytes]:
 # Email Templates
 # =======================
 
+# Mizrahi Tefachot Logo (hosted PNG - inline SVG is stripped by Gmail/Outlook)
+MIZRAHI_LOGO_URL = "https://raw.githubusercontent.com/idan82labs/Mizrahi-Automations/special-transactions/assets/mizrahi_logo.png"
+MIZRAHI_LOGO_IMG = f'<img src="{MIZRAHI_LOGO_URL}" alt="Mizrahi Tefachot" style="height: 50px; width: auto;" />'
+
+
+def _build_email_template(
+    title: str,
+    header_color: str,
+    manager_name: str,
+    report_filename: str,
+    created_date: str,
+    created_time: str,
+    show_samples_note: bool = False,
+    extra_content: str = "",
+) -> str:
+    """Build styled HTML email template with Mizrahi branding."""
+    samples_note = ""
+    if show_samples_note:
+        samples_note = '''
+        <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px 20px; display: flex; align-items: center; gap: 12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="M22 6l-10 7L2 6"/>
+            </svg>
+            <span style="font-size: 14px; color: #6b7280;">אימייל עם דגימות למנהל הקרן יישלח בנפרד</span>
+        </div>
+        '''
+
+    return f'''<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; direction: rtl; margin: 0; padding: 40px 20px; background: #f1f5f9;">
+    <div style="max-width: 600px; margin: 0 auto;">
+        <!-- Logo Section -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            {MIZRAHI_LOGO_IMG}
+        </div>
+
+        <!-- Colored Header -->
+        <div style="background: {header_color}; border-radius: 16px; padding: 40px 20px; text-align: center; margin-bottom: 30px;">
+            <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.2); border-radius: 12px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="3" y="10" width="4" height="10" rx="1" fill="white"/>
+                    <rect x="10" y="6" width="4" height="14" rx="1" fill="white"/>
+                    <rect x="17" y="2" width="4" height="18" rx="1" fill="white"/>
+                </svg>
+            </div>
+            <h1 style="color: white; font-size: 24px; margin: 0; font-weight: 600;">{title}</h1>
+        </div>
+
+        <!-- Details Card -->
+        <div style="background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; border-right: 4px solid {header_color}; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <h2 style="font-size: 18px; color: #1f2937; margin: 0 0 20px 0; font-weight: 600;">פרטי הדוח</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px 0; font-size: 14px; color: #6b7280; width: 120px;">מנהל קרן:</td>
+                    <td style="padding: 12px 0; font-size: 14px; color: #1f2937; font-weight: 500;">{manager_name}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px 0; font-size: 14px; color: #6b7280;">שם הדוח:</td>
+                    <td style="padding: 12px 0; font-size: 14px; color: #1f2937; font-weight: 500;">{report_filename}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 12px 0; font-size: 14px; color: #6b7280;">תאריך יצירה:</td>
+                    <td style="padding: 12px 0; font-size: 14px; color: #1f2937; font-weight: 500;">{created_date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 0; font-size: 14px; color: #6b7280;">שעת יצירה:</td>
+                    <td style="padding: 12px 0; font-size: 14px; color: #1f2937; font-weight: 500;">{created_time}</td>
+                </tr>
+            </table>
+            {extra_content}
+        </div>
+
+        <!-- Info Boxes -->
+        <div style="background: #eff6ff; border-radius: 8px; padding: 15px 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+            <span style="font-size: 14px; color: #2563eb;">הדוח המלא מצורף למייל זה כקובץ Excel</span>
+        </div>
+
+        {samples_note}
+    </div>
+</body>
+</html>'''
+
 
 def build_hook2_email_html(
     manager_name: str, report_filename: str, created_date: str, created_time: str
 ) -> str:
     """Build HTML email for Hook 2 (Special Transactions)."""
-    return f"""<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><title>דוח עסקאות מיוחדות</title></head>
-<body style="font-family: 'Segoe UI', Tahoma, sans-serif; direction: rtl; padding: 20px;">
-<h1 style="color: #F97316;">דוח עסקאות מיוחדות - {manager_name}</h1>
-<p>שם הדוח: {report_filename}</p>
-<p>תאריך יצירה: {created_date} {created_time}</p>
-<p>הדוח המלא מצורף למייל זה כקובץ Excel.</p>
-<hr><p style="color: #888;">Powered by 82Labs</p>
-</body></html>"""
+    return _build_email_template(
+        title="דוח עסקאות מיוחדות",
+        header_color="#F5821F",
+        manager_name=manager_name,
+        report_filename=report_filename,
+        created_date=created_date,
+        created_time=created_time,
+        show_samples_note=True,
+    )
 
 
 def build_hook1_email_html(
     manager_name: str, report_filename: str, created_date: str, created_time: str
 ) -> str:
     """Build HTML email for Hook 1 (Monthly Report)."""
-    return f"""<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><title>דוח חודשי</title></head>
-<body style="font-family: 'Segoe UI', Tahoma, sans-serif; direction: rtl; padding: 20px;">
-<h1 style="color: #3B82F6;">דוח בקרה חודשי - {manager_name}</h1>
-<p>שם הדוח: {report_filename}</p>
-<p>תאריך יצירה: {created_date} {created_time}</p>
-<p>הדוח המלא מצורף למייל זה כקובץ Excel.</p>
-<hr><p style="color: #888;">Powered by 82Labs</p>
-</body></html>"""
+    return _build_email_template(
+        title="דוח בקרה חודשי",
+        header_color="#3B82F6",
+        manager_name=manager_name,
+        report_filename=report_filename,
+        created_date=created_date,
+        created_time=created_time,
+    )
 
 
 def build_hook5_email_html(
     manager_name: str, report_filename: str, created_date: str, created_time: str
 ) -> str:
     """Build HTML email for Hook 5 (K.303 Disclosure)."""
-    return f"""<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head><meta charset="UTF-8"><title>דוח גילוי נאות ק.303</title></head>
-<body style="font-family: 'Segoe UI', Tahoma, sans-serif; direction: rtl; padding: 20px;">
-<h1 style="color: #10B981;">דוח גילוי נאות ק.303 - {manager_name}</h1>
-<p>שם הדוח: {report_filename}</p>
-<p>תאריך יצירה: {created_date} {created_time}</p>
-<p>הדוח כולל בדיקות:</p>
-<ul>
-<li>בדיקה 1א - שלמות קרנות</li>
-<li>בדיקה 1ב - תקינות תאריכים</li>
-<li>בדיקה 2א - סבירות מול דוח קודם</li>
-<li>בדיקה 2ב - סבירות מול מאפייני הקרן</li>
-<li>בדיקות 3 - הצלבות קודים</li>
-</ul>
-<p>הדוח המלא מצורף למייל זה כקובץ Excel.</p>
-<hr><p style="color: #888;">Powered by 82Labs</p>
-</body></html>"""
+    checks_content = '''
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9;">
+                <p style="font-size: 14px; color: #6b7280; margin: 0 0 10px 0;">הדוח כולל בדיקות:</p>
+                <ul style="margin: 0; padding-right: 20px; color: #1f2937; font-size: 14px;">
+                    <li>בדיקה 1א - שלמות קרנות</li>
+                    <li>בדיקה 1ב - תקינות תאריכים</li>
+                    <li>בדיקה 2א - סבירות מול דוח קודם</li>
+                    <li>בדיקה 2ב - סבירות מול מאפייני הקרן</li>
+                    <li>בדיקות 3 - הצלבות קודים</li>
+                </ul>
+            </div>
+    '''
+    return _build_email_template(
+        title="דוח גילוי נאות ק.303",
+        header_color="#10B981",
+        manager_name=manager_name,
+        report_filename=report_filename,
+        created_date=created_date,
+        created_time=created_time,
+        extra_content=checks_content,
+    )
 
 
 def send_report_email(
