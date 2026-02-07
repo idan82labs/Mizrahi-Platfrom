@@ -8,6 +8,7 @@ Usage:
     python batch_hook1_with_email.py --managers "סיגמא,מגדל" --email "test@test.com"
 """
 
+import re
 import sys
 import argparse
 import subprocess
@@ -24,6 +25,14 @@ from hook_utils import (
 HOOK1_SCRIPT = SCRIPTS_DIR / "fund_automation_complete.py"
 HOOK1_COLOR = "#4a9d7c"
 HOOK1_COLOR_LIGHT = "#e3f1f4"
+
+
+def _extract_month_from_filename(filename: str) -> str:
+    """Extract 'נובמבר 2025' from 'דוח_מגדל_דוח_חודשי-נובמבר_2025.xlsx'."""
+    match = re.search(r'חודשי-(\S+)_(\d{4})', filename)
+    if match:
+        return f"{match.group(1)} {match.group(2)}"
+    return ""
 
 
 def run_hook1_for_manager(
@@ -112,11 +121,13 @@ def main():
         xlsx_path, error_msg = run_hook1_for_manager(manager, output_dir)
 
         if xlsx_path:
+            month_str = _extract_month_from_filename(xlsx_path.name)
             results.append({"manager": manager, "status": "success", "filename": xlsx_path.name})
-            subject = f"דוח בקרת איכות נתונים - {manager}"
+            subject = f"דוח בקרת איכות נתונים - {manager} - {month_str}" if month_str else f"דוח בקרת איכות נתונים - {manager}"
+            title = f"דוח בקרת איכות נתונים - {month_str}" if month_str else "דוח בקרת איכות נתונים"
             if send_hook_email(
                 emails, manager, xlsx_path, subject,
-                HOOK1_COLOR, HOOK1_COLOR_LIGHT, "דוח בקרת איכות נתונים",
+                HOOK1_COLOR, HOOK1_COLOR_LIGHT, title,
             ):
                 emails_sent += 1
         else:

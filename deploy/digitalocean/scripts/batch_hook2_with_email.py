@@ -30,6 +30,33 @@ HOOK2_COLOR = "#F5821F"
 HOOK2_COLOR_LIGHT = "#fff3e0"
 FUND_REPORTS_ACTOR_ID = "5lhI6O39Qbgv9O0gs"
 
+MONTHS_HE = [
+    "", "ינואר", "פברואר", "מרץ", "אפריל",
+    "מאי", "יוני", "יולי", "אוגוסט",
+    "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+]
+
+
+def _extract_report_month(manager_dir: Path) -> str:
+    """Extract report month from the CSV's ת.דוח column (DDMMYYYY format)."""
+    for csv_file in manager_dir.glob("*_special_transactions.csv"):
+        try:
+            with open(csv_file, encoding='utf-8-sig') as f:
+                header = f.readline().strip().split(',')
+                if 'ת.דוח' in header:
+                    idx = header.index('ת.דוח')
+                    first_row = f.readline().strip().split(',')
+                    if len(first_row) > idx:
+                        date_str = first_row[idx]
+                        if len(date_str) == 8:
+                            month = int(date_str[2:4])
+                            year = date_str[4:8]
+                            if 1 <= month <= 12:
+                                return f"{MONTHS_HE[month]} {year}"
+        except Exception:
+            pass
+    return ""
+
 
 def build_maya_url_hook2(fund_code: str) -> str:
     """Build Maya URL for special transactions reports (eventsId=5615)."""
@@ -208,11 +235,13 @@ def main():
         )
 
         if xlsx_path:
+            month_str = _extract_report_month(output_dir / manager)
             results.append({"manager": manager, "status": "success", "filename": xlsx_path.name})
-            subject = f"דוח עסקאות מיוחדות - {manager}"
+            subject = f"דוח עסקאות מיוחדות - {manager} - {month_str}" if month_str else f"דוח עסקאות מיוחדות - {manager}"
+            title = f"דוח עסקאות מיוחדות - {month_str}" if month_str else "דוח עסקאות מיוחדות"
             if send_hook_email(
                 emails, manager, xlsx_path, subject,
-                HOOK2_COLOR, HOOK2_COLOR_LIGHT, "דוח עסקאות מיוחדות",
+                HOOK2_COLOR, HOOK2_COLOR_LIGHT, title,
             ):
                 emails_sent += 1
         else:
