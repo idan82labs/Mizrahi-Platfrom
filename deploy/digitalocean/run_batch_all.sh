@@ -30,4 +30,4 @@ if [ -z "$APIFY_API_TOKEN" ]; then
 fi
 
 # Run the batch processor
-python scripts/batch_all_hooks.py "$@"
+python3 scripts/batch_all_hooks.py "$@"

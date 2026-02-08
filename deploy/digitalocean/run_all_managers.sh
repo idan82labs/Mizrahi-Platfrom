@@ -4,9 +4,8 @@
 # Usage: ./run_all_managers.sh --email "your@email.com"
 #
 
-set -e
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+EXIT_CODE=0
 
 # Activate virtual environment
 if [ -d "$SCRIPT_DIR/venv" ]; then
@@ -31,7 +30,7 @@ echo "STEP 1: HOOK 1 - MONTHLY REPORT"
 echo "=========================================="
 echo ""
 
-python "$SCRIPT_DIR/scripts/batch_hook1_with_email.py" "$@"
+python3 "$SCRIPT_DIR/scripts/batch_hook1_with_email.py" "$@" || EXIT_CODE=1
 
 # ==========================================
 # HOOK 2: Special Transactions
@@ -42,7 +41,7 @@ echo "STEP 2: HOOK 2 - SPECIAL TRANSACTIONS"
 echo "=========================================="
 echo ""
 
-python "$SCRIPT_DIR/scripts/batch_hook2_with_email.py" "$@"
+python3 "$SCRIPT_DIR/scripts/batch_hook2_with_email.py" "$@" || EXIT_CODE=1
 
 # ==========================================
 # HOOK 5: K.303 Disclosure
@@ -53,7 +52,7 @@ echo "STEP 3: HOOK 5 - K.303 DISCLOSURE"
 echo "=========================================="
 echo ""
 
-python "$SCRIPT_DIR/scripts/batch_hook5_with_email.py" "$@"
+python3 "$SCRIPT_DIR/scripts/batch_hook5_with_email.py" "$@" || EXIT_CODE=1
 
 # ==========================================
 # Summary
@@ -62,3 +61,5 @@ echo ""
 echo "=========================================="
 echo "ALL PROCESSING COMPLETE"
 echo "=========================================="
+
+exit $EXIT_CODE

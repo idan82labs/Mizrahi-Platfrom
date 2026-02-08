@@ -61,7 +61,7 @@ if [ -f "$SPEC_FILE" ]; then
     echo "Using spec file: $SPEC_FILE"
 fi
 
-python "$SCRIPT_DIR/scripts/mizrahi_special_transactions.py" \
+python3 "$SCRIPT_DIR/scripts/mizrahi_special_transactions.py" \
     --mutual-funds-list "$TEST_DATA_DIR/Mutual_Funds_List.xlsx" \
     --input-report "$MANAGER_CSV" \
     --output-xlsx "$OUTPUT_DIR/$MANAGER/${MANAGER}_special_transactions_report.xlsx" \
@@ -76,7 +76,7 @@ echo "[2/3] Comparing output with legacy expected results..."
 echo ""
 
 # Compare with legacy output
-python "$SCRIPT_DIR/scripts/compare_output.py" \
+python3 "$SCRIPT_DIR/scripts/compare_output.py" \
     --new-dir "$OUTPUT_DIR" \
     --legacy-dir "$TEST_DATA_DIR" \
     --manager "$MANAGER" \

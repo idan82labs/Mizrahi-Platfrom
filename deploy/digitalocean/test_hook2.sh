@@ -29,7 +29,7 @@ echo "=========================================="
 echo ""
 
 # Run hook for single manager (no email sending)
-python "$SCRIPT_DIR/scripts/batch_hook2_with_email.py" \
+python3 "$SCRIPT_DIR/scripts/batch_hook2_with_email.py" \
     --managers "$MANAGER" \
     --email "test@test.com" \
     --output-dir "$OUTPUT_DIR" \

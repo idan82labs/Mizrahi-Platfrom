@@ -33,7 +33,7 @@ elif [ -d "/opt/mizrahi/venv" ]; then
 fi
 
 # Run test (loads .env via python-dotenv)
-python scripts/batch_all_hooks.py \
+python3 scripts/batch_all_hooks.py \
     --managers "$MANAGER" \
     --email "$EMAIL" \
     --output-dir ./test_output

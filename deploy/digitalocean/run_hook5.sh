@@ -22,7 +22,7 @@ echo "=========================================="
 echo ""
 
 # Run batch processor (loads .env via python-dotenv)
-python "$SCRIPT_DIR/scripts/batch_hook5_with_email.py" "$@"
+python3 "$SCRIPT_DIR/scripts/batch_hook5_with_email.py" "$@"
 
 echo ""
 echo "=========================================="

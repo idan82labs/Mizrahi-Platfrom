@@ -63,7 +63,7 @@ if [ -f "$SPEC_FILE" ]; then
 fi
 
 # Run the K.303 validator
-python "$SCRIPT_DIR/scripts/disclosure_k303_validator.py" \
+python3 "$SCRIPT_DIR/scripts/disclosure_k303_validator.py" \
     --mutual-funds-list "$MUTUAL_FUNDS_FILE" \
     --current-report "$CURRENT_REPORT" \
     --previous-report "$PREVIOUS_REPORT" \

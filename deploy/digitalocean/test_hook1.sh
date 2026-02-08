@@ -33,7 +33,7 @@ echo "=========================================="
 echo ""
 
 # Run hook
-python "$SCRIPT_DIR/scripts/fund_automation_complete.py" \
+python3 "$SCRIPT_DIR/scripts/fund_automation_complete.py" \
     --fund-name "$MANAGER" \
     --output-dir "$OUTPUT_DIR"
 
